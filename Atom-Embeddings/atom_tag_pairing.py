@@ -6,21 +6,24 @@ import re
 import math
 import itertools
 from sklearn.neighbors import NearestNeighbors
+from scipy import spatial
+
 class Atom_Tag_Pairing():
-    def __init__(self, data_dict, adjacency=None, projection=None, out_vec=None):
+    def __init__(self, data_dict, adjacency=None, projection=None, prediction=None):
 
         self.data = data_dict
         self.adj = adjacency
         self.proj = projection
 
-        self.out_vec = out_vec # output vector from the NN
+        self.pred = prediction # output vector from the NN
 
         self.tagnum = [] # stores adjacency tag groups.
         self.va = [] # adjacency values
         self.vd = [] # data values
 
-        self.out_proj = []
+        self.pred_proj = np.zeros((self.pred.shape))
 
+        self.proj_idx = []
     def tag_pairing(self):
 
 
@@ -95,19 +98,40 @@ class Atom_Tag_Pairing():
 
     def nearest_neighbor(self):
         # nearest neighbor search between the output vectors from the ANN and the projection matrix
-        lenvec = len(self.out_vec)
+        lenvec = len(self.pred)
         proj_idx = [] # list of indices of the projection vectors in self.proj that are the nearest neighbor to the current vec of self.out_vec
+
         nbrs = NearestNeighbors(n_neighbors=1).fit(self.proj)
-        for vec in self.out_vec:
+        for ii, vec in enumerate(self.pred):
+            vec = vec.reshape(1, -1)
             kn = nbrs.kneighbors(vec)
             proj_idx = int(kn[1]) # kn[1] is the index of self.proj that vec is nearest
-            self.out_proj.append(self.proj[proj_idx])
+            self.pred_proj[ii, :] = self.proj[proj_idx]
+            self.proj_idx.append(proj_idx)
+
+        return self.pred_proj
 
 
+    def proj_to_nodes(self):
+        adj_nodes = self.adj['nodes']
+        pred_nodes = []
+        try:
+            for idx in self.proj_idx:
+                pred_nodes.append(adj_nodes.values[str(idx)])
+        except:
+            rev_adj_nodes = dict()
+            for key, val in adj_nodes.items():
+                rev_adj_nodes[val] = key
+
+            for idx in self.proj_idx:
+                pred_nodes.append(rev_adj_nodes[idx])
+
+        return pred_nodes
 
 
-    # def proj_to_adj(self):
-    # def adj_to_cat
+    # def proj_accuracy(self):
+    # def node_accuracy(self):
+
 
     def one_hotify(self):
         # One-hot method for adjacency nodes
@@ -153,10 +177,22 @@ if __name__ == '__main__':
         proj = pickle.load(f3)
 
 
-    ATP = Atom_Tag_Pairing(data, adjacency=adj, projection=proj)
+    # Training labels
+    # ATP = Atom_Tag_Pairing(data, adjacency=adj, projection=proj)
+    #
+    # ATP.tag_pairing()
+    # # labels = ATP.one_hotify()
+    # labels = ATP.projection_vectors()
+    # with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\test_labels_proj.pkl', 'wb') as f4:
+    #     pickle.dump(labels, f4)
 
-    ATP.tag_pairing()
-    # labels = ATP.one_hotify()
-    labels = ATP.projection_vectors()
-    with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\test_labels_proj.pkl', 'wb') as file:
-        pickle.dump(labels, file)
+    # Inverse
+
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\prediction.pkl', 'rb') as f5:
+        pred = pickle.load(f5)
+    ATP = Atom_Tag_Pairing(data, adjacency=adj, projection=proj.T, prediction=pred)
+    nearest_projections = ATP.nearest_neighbor()
+    predicted_nodes = ATP.proj_to_nodes()
+
+
+

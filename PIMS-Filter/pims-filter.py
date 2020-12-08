@@ -73,7 +73,7 @@ class PIMS_Filter:
           evals_small, evecs_small = eigsh(self.L, self.n_PC+1, which='SA')
         
         if any(evals_small <= 0):
-            raise ValueError(f'evals_small <= 0') 
+            raise ValueError(f'evals_small <= 0')
         
         self.evals = 1/evals_small[1:None] # exclude smallest because it's approximating the zero eigenvalue
         self.evecs = evecs_small[:,1:None] # exclude smallest because it's approximating the zero eigenvalue
