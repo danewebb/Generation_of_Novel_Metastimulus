@@ -9,12 +9,12 @@ import tensorflow as tf
 # from tensorflow.keras import layers
 
 
-class Data_Processing():
+class Tex_Processing():
     """
     This class handles splitting data between
     """
 
-    def __init__(self, training_data_dir, testing_data_dir, vocab_dir, train_projection):
+    def __init__(self, training_data_dir, testing_data_dir, vocab_dir):
         with open(training_data_dir, 'rb') as training_data:
             self.train_data =  pickle.load(training_data)
 
@@ -22,8 +22,8 @@ class Data_Processing():
             self.test_data = pickle.load(testing_data)
 
 
-        with open(train_projection, 'rb') as train_labels:
-            self.train_plabels = pickle.load(train_labels)
+        # with open(train_projection, 'rb') as train_labels:
+        #     self.train_plabels = pickle.load(train_labels)
 
         # self.train_nodes, self.train_vectors = self.__pims_labels('pims-filter/adjacency_train.json')
         # self.test_nodes, self.test_vectors = self.__pims_labels('pims-filter/')
@@ -249,8 +249,8 @@ class Data_Processing():
 
 
 
-    def main(self, random_state=24):
-        threshold = 1
+    def main(self, train_vecs_path, test_vecs_path, threshold=1):
+
         # self.pims_labels()
 
         output_dict = dict()
@@ -271,14 +271,17 @@ class Data_Processing():
         # with open('train_vec.pkl', 'wb') as file:
         #     pickle.dump(self.embedxtrain, file)
 
-        with open('test_vec.pkl', 'wb') as test_vec_file:
+        with open(train_vecs_path, 'wb') as train_vec_file:
+            pickle.dump(self.embedxtrain, train_vec_file)
+
+        with open(test_vecs_path, 'wb') as test_vec_file:
             pickle.dump(self.embedxtest, test_vec_file)
 
         # embedatom_train, embedatom_test = self.atom_embeddings()
-        self.vec_lengths()
-
-        with open('test_len.pkl', 'wb') as test_len_file:
-            pickle.dump(self.test_lens, test_len_file)
+        # self.vec_lengths()
+        #
+        # with open('test_len.pkl', 'wb') as test_len_file:
+        #     pickle.dump(self.test_lens, test_len_file)
 
         # with open('train_len.pkl', 'wb') as file1:
         #     pickle.dump(self.train_lens, file1)

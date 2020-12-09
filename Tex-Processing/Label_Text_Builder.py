@@ -2,7 +2,6 @@ import numpy as np
 import pickle
 import re
 import os
-import psycopg2 as psy
 import json
 
 
@@ -120,7 +119,7 @@ class Label_Text_Builder():
 
     tag = []
     jj = 0
-    def __init__(self, *args):
+    def __init__(self, *args, vocab_save_path, data_save_path):
         self.args = args
         self.codex = []
         self.para_num = 0
@@ -139,6 +138,8 @@ class Label_Text_Builder():
         self.unique_tags = []
         # need to add some sort of grand master dictionary that keeps chapters and textbook separate
 
+        self.vocab_save_path = vocab_save_path
+        self.data_save_path = data_save_path
 
     def main(self, the_count=False):
         tagsec = []
@@ -288,7 +289,7 @@ class Label_Text_Builder():
                                         self.word_count(para)
                                     tagpara = []
 
-                with open('doc_dict.pkl', 'wb') as pickle_file:
+                with open(self.data_save_path, 'wb') as pickle_file:
                     pickle.dump(self.master, pickle_file)
 
 
@@ -684,7 +685,7 @@ class Label_Text_Builder():
 
         voc_list.sort(key= lambda x: x[1])
 
-        with open('rank_vocab.pkl', 'wb') as r:
+        with open(self.vocab_save_path, 'wb') as r:
             pickle.dump(voc_list, r)
         r.close()
 

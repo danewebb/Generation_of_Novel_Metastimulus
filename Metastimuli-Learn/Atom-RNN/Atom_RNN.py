@@ -111,3 +111,61 @@ class Atom_RNN():
             layers.Dense(self.output_size,
                          activation='softmax')
         ])
+
+        model.compile(
+
+            optimizer='adam',
+            loss=tf.keras.losses.mean_squared_error,
+            metrics=['mean_squared_error']
+
+        )
+        return model
+
+
+    def train(self):
+        try:
+            self.history = self.model.fit(
+                self.data, self.train_labels, epochs=self.epochs, batch_size=self.batch_size, shuffle=False
+                # shuffles batches
+                , verbose=1  # supresses progress bar
+            )
+        except ValueError:
+            self.data = self.data.T
+            self.history = self.model.fit(
+                self.data, self.train_labels, epochs=self.epochs, batch_size=self.batch_size, shuffle=False
+                # shuffles batches
+                , verbose=1  # supresses progress bar
+            )
+        return self.history
+
+
+    def test(self):
+        try:
+            result = self.model.evaluate(self.test_data, self.test_labels, batch_size=self.batch_size)
+
+        except:
+            self.test_data = self.test_data.T # transpose data
+            result = self.model.evaluate(self.test_data, self.test_labels, batch_size=self.batch_size)
+
+        if len(result) > 2:
+            print(f'Test results: Loss= {result[0]:.3f}, Accuracy = {100*result[1]:.3f}%')
+            return result[0], result[1]
+        else:
+            print(f'Test results: Loss= {result[0]:.3f}')
+            return result
+
+
+    def predict(self):
+        # self.data = self.data.T
+        try:
+            result = self.model.predict(self.data, batch_size=self.batch_size)
+        except:
+            self.data = self.data.T
+            result = self.model.predict(self.data, batch_size=self.batch_size)
+        return result
+
+    def save_model(self):
+
+        keras.models.save_model(
+            self.model, self.save_model_path
+        )
