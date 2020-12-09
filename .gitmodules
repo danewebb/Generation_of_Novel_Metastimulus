@@ -1,3 +1,6 @@
 [submodule "pims-filter"]
 	path = pims-filter
 	url = https://github.com/ricopicone/pims-filter.git
+[submodule "dialectica-pimsifier"]
+	path = dialectica-pimsifier
+	url = https://github.com/dialectic/dialectica-pimsifier.git
