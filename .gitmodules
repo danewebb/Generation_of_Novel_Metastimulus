@@ -1,0 +1,3 @@
+[submodule "pims-filter"]
+	path = pims-filter
+	url = https://github.com/ricopicone/pims-filter.git
