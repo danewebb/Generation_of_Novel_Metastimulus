@@ -299,10 +299,10 @@ if __name__ == '__main__':
             epochs=set_epochs,
             regression=True,
             # classification=True,
-            model_path=r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Atom_LV_NN\model100_proj',
-            # save_model_path=r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Atom_LV_NN\model100_proj',
-            test_label_path=r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\null_train_labels_proj.pkl',
-            test_path=r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\atom_vectors_avg.pkl',
+            # model_path=r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Atom_LV_NN\model100_proj',
+            save_model_path=r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Atom_LV_NN\model100_proj',
+            test_path=r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\test_atom_vectors_avg1.pkl',
+            test_label_path=r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\test_labels_proj.pkl',
             dense_out=2,
             hidden=100,
             dense_in=2
@@ -313,7 +313,7 @@ if __name__ == '__main__':
 
         # training and saving
         # AFF.mod_labels() # only for regression
-        # history = AFF.train()
+        history = AFF.train()
         # print(
         #     'hello world'
         # )
@@ -346,20 +346,20 @@ if __name__ == '__main__':
         #                     graph_dict_path= r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Atom-FFNN\regress_graph_data.pkl',
         #                     save_file=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Atom-FFNN\regress_graph_data.pkl')
 
-        # param = 'ff_100ep_nullset_ricoword_BOWavg_proj'
-        # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Atom-FFNN\regress_graph_data.pkl', 'rb') as f3:
-        #     regress_graph_dict = pickle.load(f3)
+        param = 'ff_100ep_test_ricoword_BOWavg_proj'
+        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Atom-FFNN\regress_graph_data.pkl', 'rb') as f3:
+            regress_graph_dict = pickle.load(f3)
         #
-        # regress_graph_dict = AFF.test_regression_results(regress_graph_dict, param)
+        regress_graph_dict = AFF.test_regression_results(regress_graph_dict, param)
         #
         # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Atom-FFNN\regress_graph_data.pkl', 'wb') as f4:
         #     pickle.dump(regress_graph_dict, f4)
 
 
         # use case
-        results = AFF.predict()
-
-        print(results)
-
-        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\prediction.pkl', 'wb') as f5:
-            pickle.dump(results, f5)
+        # results = AFF.predict()
+        #
+        # print(results)
+        #
+        # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\prediction.pkl', 'wb') as f5:
+        #     pickle.dump(results, f5)

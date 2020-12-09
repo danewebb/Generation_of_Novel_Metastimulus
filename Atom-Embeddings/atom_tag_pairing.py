@@ -194,5 +194,7 @@ if __name__ == '__main__':
     nearest_projections = ATP.nearest_neighbor()
     predicted_nodes = ATP.proj_to_nodes()
 
+    print('hello world')
+
 
 
