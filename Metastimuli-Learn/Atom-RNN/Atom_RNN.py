@@ -12,7 +12,7 @@ class Atom_RNN():
 
     def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='',
                  model_path = '', save_model_path='', batch_size=10, epochs=100,
-                  drop_per=0.1, dense_out=2, dense_in=2, hidden=50,
+                  drop_per=0.1, input_shape=(), units=0, output_size=0,
                  regression=False, classification=False):
         try:
             with open(data_path, 'rb') as data_file:
@@ -28,10 +28,11 @@ class Atom_RNN():
         self.batch_size = batch_size
         self.epochs = epochs
         self.drop_per = drop_per
-        self.dense1 = dense_out
-        self.dense2 = dense_in
-        self.hidden = hidden
 
+
+        self.input_shape = input_shape
+        self.units = units
+        self.output_size = output_size
 
 
 
@@ -106,8 +107,9 @@ class Atom_RNN():
         model = keras.Sequential([
             layers.SimpleRNN(
                 units=self.units,
-                dropout=self.drop_per,
-                input_shape=self.input_shape),
+                # dropout=self.drop_per,
+                input_shape=self.input_shape
+            ),
             layers.Dense(self.output_size,
                          activation='softmax')
         ])
@@ -121,7 +123,25 @@ class Atom_RNN():
         )
         return model
 
+    def build_classification_model(self):
+        model = keras.Sequential([
+            layers.SimpleRNN(
+                units=self.units,
+                # dropout=self.drop_per,
+                # input_shape=self.input_shape,
+            ),
+            layers.Dense(self.output_size,
+                         activation='softmax')
+        ])
 
+        model.compile(
+
+            optimizer='adam',
+            loss=tf.keras.losses.categorical_crossentropy,
+            metrics=['accuracy']
+
+        )
+        return model
     def train(self):
         try:
             self.history = self.model.fit(
@@ -169,3 +189,31 @@ class Atom_RNN():
         keras.models.save_model(
             self.model, self.save_model_path
         )
+
+
+if __name__ == '__main__':
+    RNN = Atom_RNN(
+        data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\RNN_Data\train_atom_vectors_avg_rnn.pkl'
+        , train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\RNN_Data\train_labels_rnn.pkl'
+        , test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\RNN_Data\test_atom_vectors_avg_rnn.pkl'
+        , test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\RNN_Data\test_labels_rnn.pkl'
+        # , model_path=r''
+        , save_model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\RNN_Data\rnn_model_100'
+        , batch_size=10
+        , epochs=100
+        # , drop_per=0.1
+        , regression=True
+        , input_shape=(1,2)
+        , output_size=2
+        , units=454
+
+                   )
+
+
+    RNN.train()
+
+
+    #     self, data_path = '', train_label_path = '', test_path = '', test_label_path = '',
+    #     model_path = '', save_model_path = '', batch_size = 10, epochs = 100,
+    #     drop_per = 0.1, dense_out = 2, dense_in = 2, hidden = 50,
+    #     regression = False, classification = False):

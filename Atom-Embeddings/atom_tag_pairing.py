@@ -21,7 +21,8 @@ class Atom_Tag_Pairing():
         self.va = [] # adjacency values
         self.vd = [] # data values
 
-        self.pred_proj = np.zeros((self.pred.shape))
+        if prediction:
+            self.pred_proj = np.zeros((self.pred.shape))
 
         self.proj_idx = []
     def tag_pairing(self):
@@ -83,7 +84,7 @@ class Atom_Tag_Pairing():
             if num == lenva:
                 tagvec.append(np.zeros([2, 1]))
             else:
-                temp = proj[:, num]
+                temp = self.proj[:, num]
                 temp = temp.reshape((temp.shape[0], 1))
                 tagvec.append(temp)
 

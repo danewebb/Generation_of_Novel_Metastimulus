@@ -22,7 +22,7 @@ class word_embedding_ricocorpus():
 
 
     def __init__(self, encoded_data, ranked_vocab, embedding_dim, set_epochs=100, batch_size=20,
-                 dense1_size = 16, dense2_size = 1, shuffling=True, save_location=''):
+                 dense1_size = 16, dense2_size = 1, shuffling=True, save_location='', model_path=''):
 
         self.data = encoded_data
         self.vocab = ranked_vocab
@@ -40,7 +40,11 @@ class word_embedding_ricocorpus():
 
         self.save_location = save_location
 
-        self.train = train
+        self.weights = None
+        self.embedded_vecs = None
+
+        if model_path != '':
+            self.model = keras.models.load_model(model_path)
 
     def list_to_numpy(self):
         # non-csv path
@@ -125,6 +129,13 @@ class word_embedding_ricocorpus():
         # out_m.close()
 
 
+
+
+    def encoded_to_embed(self, ):
+        # Assigns corresponding vectors to the encoded word values.
+        for num, word in enumerate(self.vocab):  # 0 index of vocab is 0????
+            # loop through vocab and assign the correct weights to the vocab
+            self.embedded_vecs[num] = self.weights[num]
 
 
 if __name__ == '__main__':

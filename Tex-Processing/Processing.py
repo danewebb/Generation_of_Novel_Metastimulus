@@ -14,25 +14,7 @@ class Tex_Processing():
     This class handles splitting data between
     """
 
-    def __init__(self, training_data_dir, testing_data_dir, vocab_dir):
-        with open(training_data_dir, 'rb') as training_data:
-            self.train_data =  pickle.load(training_data)
-
-        with open(testing_data_dir, 'rb') as testing_data:
-            self.test_data = pickle.load(testing_data)
-
-
-        # with open(train_projection, 'rb') as train_labels:
-        #     self.train_plabels = pickle.load(train_labels)
-
-        # self.train_nodes, self.train_vectors = self.__pims_labels('pims-filter/adjacency_train.json')
-        # self.test_nodes, self.test_vectors = self.__pims_labels('pims-filter/')
-
-        with open(vocab_dir, 'rb') as vocab_data:
-            self.vocab_data = pickle.load(vocab_data)
-
-
-
+    def __init__(self, training_data=None, testing_data=None, vocab=None, training_data_dir='', testing_data_dir='', vocab_dir=''):
         self.xtrain = []
         self.ytrain = []
 
@@ -44,6 +26,40 @@ class Tex_Processing():
 
         self.train_lens = []
         self.test_lens = []
+
+        if training_data_dir != '':
+            with open(training_data_dir, 'rb') as training_data:
+                self.train_data =  pickle.load(training_data)
+        elif training_data != None:
+            self.xtrain = training_data
+        else:
+            ValueError('Training data is not defined')
+
+        if testing_data_dir != '':
+            with open(testing_data_dir, 'rb') as testing_data:
+                self.test_data = pickle.load(testing_data)
+        elif testing_data != None:
+            self.xtest = testing_data
+        else:
+            ValueError('Testing data is not defined')
+
+
+        # with open(train_projection, 'rb') as train_labels:
+        #     self.train_plabels = pickle.load(train_labels)
+
+        # self.train_nodes, self.train_vectors = self.__pims_labels('pims-filter/adjacency_train.json')
+        # self.test_nodes, self.test_vectors = self.__pims_labels('pims-filter/')
+        if vocab_dir != '':
+            with open(vocab_dir, 'rb') as vocab_data:
+                self.vocab_data = pickle.load(vocab_data)
+        elif vocab != None:
+            self.vocab_data = vocab
+        else:
+            ValueError('Vocab is not defined')
+
+
+
+
 
 
 
@@ -246,7 +262,18 @@ class Tex_Processing():
     #         return nodes, vectors
 
 
+    def save_files(self, train_path='', test_path=''):
+        if train_path!='':
+            with open(train_path, 'wb') as f1:
+                pickle.dump(self.embedxtrain, f1)
+        if test_path != '':
+            with open(test_path, 'wb') as f2:
+                pickle.dump(self.embedxtest, f2)
 
+
+    def return_encodes(self):
+        # poorly named, these are encoded not embedded.
+        return self.embedxtrain, self.embedxtest
 
 
     def main(self, train_vecs_path, test_vecs_path, threshold=1):

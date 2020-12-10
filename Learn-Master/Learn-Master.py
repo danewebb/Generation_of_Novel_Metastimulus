@@ -11,6 +11,11 @@ from Processing import Tex_Processing
 
 # PIMS filter import
 
+import pickle
+import os
+import tensorflow as tf
+from tensorflow import keras
+import keras.layers as layers
 
 class Learn_Master():
     """
@@ -49,7 +54,24 @@ class Learn_Master():
     def create_dataset(self):
         data_path = r'dataset.pkl'
         PS = Process_Sciart(self.dataset, data_path, vocabfile=self.vocab_file)
-        # PS =
+        PS.main()
+
+
+    def build_word_embedding(self, data, we_batch_size, embed_dim, save_we_model_path, vocab_path, we_model_path=''):
+        Word_Embed = Sciart_Word_Embedding(data, batch_size=we_batch_size, embedding_dim=embed_dim,
+                                           save_model_path=save_we_model_path, vocab_path=self.vocab_save_path, model_path=we_model_path)
+        Word_Embed.main()
+
+    def import_word_embedding(self, we_model, dataset):
+        Word_Embed = Sciart_Word_Embedding(dataset)
+
+
+
+
+
+
+
+
 
 
 
