@@ -20,10 +20,9 @@ class Atom_RNN():
         except ValueError:
             print('Data path does not exist')
 
-        if not isinstance(self.data, np.ndarray):
+        if isinstance(self.data, list):
             self.data = self.data_to_numpy(self.data)
-        else:
-            TypeError('data should be either ndarray or list')
+
 
         self.batch_size = batch_size
         self.epochs = epochs
@@ -40,29 +39,45 @@ class Atom_RNN():
 
             with open(test_path, 'rb') as test_file:
                 self.test_data = pickle.load(test_file)
-            if not isinstance(self.test_data, np.ndarray):
+            if isinstance(self.test_data, list):
                 self.test_data = self.data_to_numpy(self.test_data)
-            else:
-                TypeError('test_data should be either ndarray or list')
+
 
             with open(test_label_path, 'rb') as test_label_file:
                 self.test_labels = pickle.load(test_label_file)
-            if not isinstance(self.test_labels, np.ndarray):
+
+            self.test_labels = np.asarray(self.test_labels)
+            if isinstance(self.test_labels, list):
                 self.test_labels = self.data_to_numpy(self.test_labels)
-            else:
-                TypeError('test_labels should be either ndarray or list')
+
 
 
         if train_label_path != '':
             with open(train_label_path, 'rb') as train_label_file:
                 self.train_labels = pickle.load(train_label_file)
-            if not isinstance(self.train_labels, (np.ndarray)):
+            self.train_labels = np.asarray(self.train_labels)
+            if isinstance(self.train_labels, list):
                 self.train_labels = self.data_to_numpy(self.train_labels)
-            else:
-                TypeError('train_labels should be either ndarray or list')
+
+
         else:
             raise Exception('Train label path is not valid.')
 
+
+        self.data = self.data.T
+        self.data = self.batchify(self.data)
+        self.train_labels = self.batchify(self.train_labels)
+        try:
+            self.test_data = self.batchify(self.test_data)
+        except:
+            self.test_data = None
+
+
+        try:
+            self.test_labels = self.batchify(self.test_data)
+        except:
+            self.test_labels = None
+        # self.test_data = self.test_data.reshape
 
 
         self.history = dict()
@@ -83,6 +98,24 @@ class Atom_RNN():
                 self.model = self.build_classification_model()
             else:
                 ValueError('Model is not defined.')
+
+
+
+    def batchify(self, arr):
+        temp = np.empty((self.batch_size, arr.shape[1]))
+
+        num_batches = len(arr)/self.batch_size
+        num_batches = int(np.floor(num_batches))
+
+        new_arr = np.empty((self.batch_size, arr.shape[1], num_batches))
+        for jj in range(num_batches):
+            for ii in range(self.batch_size):
+                temp[ii, :] = arr[jj*self.batch_size + ii, :]
+            new_arr[:,:,jj] = temp
+
+
+
+
 
 
     def data_to_numpy(self, lst):
@@ -203,7 +236,7 @@ if __name__ == '__main__':
         , epochs=100
         # , drop_per=0.1
         , regression=True
-        , input_shape=(1,2)
+        , input_shape=(454,2)
         , output_size=2
         , units=454
 

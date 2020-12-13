@@ -158,7 +158,7 @@ if __name__ == '__main__':
     with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\ranked_vocab.pkl', 'rb') as voc_file:
         vocab = pickle.load(voc_file)
 
-    with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\test_vec.pkl', 'rb') as vec_file:
+    with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\train_vec.pkl', 'rb') as vec_file:
         train_vectors = pickle.load(vec_file)
 
     model = tf.keras.models.load_model(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\ricocorpus_model')
@@ -168,11 +168,11 @@ if __name__ == '__main__':
     for para in train_vectors:
         # atom_vecs.append(AE.sum_of_difference(para))
         if para:
-            atom_vecs.append(AE.avg_atoms(para))
+            atom_vecs.append(AE.SIF_embedding(para, 2, 2, 10))
         else:
             # There is one empty paragraph. Error, grabbed latex code and then cleaned it.
             para = [0]
-            atom_vecs.append(AE.avg_atoms(para))
+            atom_vecs.append(AE.SIF_embedding(para, 2, 2, 10))
 
 
     # saving
