@@ -155,29 +155,28 @@ class Atom_Embedder:
 if __name__ == '__main__':
     atom_vecs = []
 
-    with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\ranked_vocab.pkl', 'rb') as voc_file:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Sciart-Processing\sciart_vocab.pkl', 'rb') as voc_file:
         vocab = pickle.load(voc_file)
 
-    with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\train_vec.pkl', 'rb') as vec_file:
-        train_vectors = pickle.load(vec_file)
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\ricocorpus_sciart_encoded.pkl', 'rb') as vec_file:
+        encoded = pickle.load(vec_file)
 
-    model = tf.keras.models.load_model(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\ricocorpus_model')
+    model = tf.keras.models.load_model(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\sciart_model')
 
     AE = Atom_Embedder(model.layers[0].get_weights()[0], vocab)
 
-    for para in train_vectors:
+    for para in encoded:
         # atom_vecs.append(AE.sum_of_difference(para))
         if para:
-            atom_vecs.append(AE.SIF_embedding(para, 2, 2, 10))
+            atom_vecs.append(AE.sum_atoms(para))
         else:
             # There is one empty paragraph. Error, grabbed latex code and then cleaned it.
             para = [0]
-            atom_vecs.append(AE.SIF_embedding(para, 2, 2, 10))
-
+            atom_vecs.append(AE.sum_atoms(para))
 
     # saving
 
-    with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\test_atom_vectors_avg1.pkl', 'wb') as file:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_sciart\all_atoms.pkl', 'wb') as file:
         pickle.dump(atom_vecs, file)
 
 

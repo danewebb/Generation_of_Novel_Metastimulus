@@ -352,18 +352,18 @@ if __name__ == '__main__':
         set_batch_size = 10
         set_epochs = 1
         AFF = Atom_FFNN(
-            data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\train_atom_vectors.pkl', # local atom vector path
-            train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\train_labels.pkl',
+            data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\train.pkl', # local atom vector path
+            train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\train_labels.pkl',
             batch_size=set_batch_size,
             epochs=set_epochs,
             regression=True,
             # classification=True,
             # model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\model50_proj',
-            save_model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\model100_proj',
+            save_model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\model50_proj',
 
-            test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\test_atom_vectors.pkl',
-            test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\test_labels.pkl',
-            nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\test_atom_vectors.pkl',
+            test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\fulltest_atoms.pkl',
+            test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\fulltest_labels.pkl',
+            nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\fulltest_atoms.pkl',
             # nullset_labels_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_rico\nulltest_set.pkl',
             dense_out=2,
             hidden=100,
@@ -371,9 +371,9 @@ if __name__ == '__main__':
             drop_per=.05
         )
 
-        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\Nullsets\nulltest_list_of_sets.pkl', 'rb') as f12:
+        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\nullfull_list_of_sets.pkl', 'rb') as f12:
             null_list = pickle.load(f12)
-        epochs = 100
+        epochs = 50
         restr = []
         reste = []
         null = []
@@ -391,18 +391,18 @@ if __name__ == '__main__':
 
             for jj in range(len(null_list)):
                 AFF = Atom_FFNN(
-                                    data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\train_atom_vectors.pkl', # local atom vector path
-                                    train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\train_labels.pkl',
+                                    data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\train.pkl', # local atom vector path
+                                    train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\train_labels.pkl',
                                     batch_size=set_batch_size,
                                     epochs=set_epochs,
                                     regression=True,
                                     # classification=True,
-                                    model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\model100_proj',
-                                    save_model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\model100_proj',
+                                    model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\model50_proj',
+                                    save_model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\model50_proj',
 
-                                    test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\test_atom_vectors.pkl',
-                                    test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\test_labels.pkl',
-                                    nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_rico\test_atom_vectors.pkl',
+                                    test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\fulltest_atoms.pkl',
+                                    test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\fulltest_labels.pkl',
+                                    nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\fulltest_atoms.pkl',
                                     nullset_labels=null_list[jj],
                                     dense_out=2,
                                     hidden=100,
@@ -415,9 +415,9 @@ if __name__ == '__main__':
 
             null.append(mean(null_holder))
             null_holder = []
-        param_tr = 'ff_100ep_train_ricoword_BOWsum_order_proj'
-        param_te = 'ff_100ep_test_ricoword_BOWsum_order_proj'
-        param_null = 'ff_100ep_nullset_ricoword_BOWsum_order_proj'
+        param_tr = 'ff_100ep_train_sciart_BOWavg_shuff_proj'
+        param_te = 'ff_100ep_test_sciart_BOWavg_shuff_proj'
+        param_null = 'ff_100ep_nullset_sciart_BOWavg_shuff_proj'
 
         with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Metastimuli-Learn\Atom-FFNN\regress_graph_data.pkl', 'rb') as f10:
             graph_dict = pickle.load(f10)

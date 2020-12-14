@@ -15,7 +15,7 @@ import pickle
 
 class Sciart_Word_Embedding:
 
-    def __init__(self, data_chunks, model_path='', labels=0, vocab_path='', batch_size=20, set_epochs=1, embedding_dim=2,
+    def __init__(self, data_chunks=None, data=None, model_path='', labels=0, vocab_path='', batch_size=20, set_epochs=1, embedding_dim=2,
                  dense1_size=16, dense2_size=1, save_model_path=''):
         """
 
@@ -32,8 +32,10 @@ class Sciart_Word_Embedding:
         :param dense2_size: Size of second Dense 'default', layer
         """
 
-
-        self.data_chunks = data_chunks
+        if data_chunks:
+            self.data_chunks = data_chunks
+        elif data:
+            self.data = data
         if vocab_path == '' or not os.path.exists(vocab_path):
             # get vocab_size from 'sciart_vocab.pkl'
             raise ValueError('vocab_path does not exist')
@@ -52,7 +54,8 @@ class Sciart_Word_Embedding:
         self.dense1_size = dense1_size
         self.dense2_size = dense2_size
 
-
+        self.weights = None
+        self.embedded_vecs = None
 
         if model_path == '' or not os.path.exists(model_path):
 
@@ -132,7 +135,7 @@ class Sciart_Word_Embedding:
         )
 
 
-    def main(self):
+    def main_train(self):
         """
         Assumes self.data_chunks is a list of file paths with clean text. Main loop calls functions within the class to
         convert the data, grab labels, and then train the network. Finally it saves the model when it completes the
@@ -157,10 +160,57 @@ class Sciart_Word_Embedding:
             print('Model was not saved due to save_model_path being undefined.')
 
 
+    def encoded_to_embed(self):
+        e = self.model.layers[0]
+        self.weights = e.get_weights()[0] # word embeddings
+        for num, word in enumerate(self.vocab):
+            self.embedded_vecs[num] = self.weights[num]
+
+
+    # def embed_atoms(self):
+    #     for word in self.data:
+
+    def word_to_vec(self):
+        """
+        Converts words into vector form. This is done by replacing the word with its place in a ranked
+        vocab list. This is the first step into word embeddings
+        :return:
+        """
+
+        word_store = []
+
+        para_vec = []
+
+
+        for paras in self.xtrain: # loops each item in the list
+
+            for para in paras: # takes the paragraph from the item
+                for let in para: # each letter in paragraph
+                    # if letter is a space, everything previous makes up a word
+                    if let == ' ':
+                        word = ''.join(word_store)
+                        clean_word = self.word_cleaner(word)
+                        word_store = []
+
+                        for idx, w in enumerate(vocab):
+                            if w == clean_word:
+                                para_vec.append(idx)
+                                break
+                            elif w == word:
+                                para_vec.append(idx)
+                                break
+                            elif idx == len(vocab) - 1:
+                                para_vec.append(0)
+                                break
+
+
+                    else:
+                        word_store.append(let)
+
+            self.embedxtrain.append(para_vec)
+            para_vec = []
 
 if __name__ == '__main__':
-
-
     with tf.device('/cpu:0'):
         epochs = 12
         report_every = 1
@@ -206,6 +256,6 @@ if __name__ == '__main__':
                 start_time = end_time
 
 
-    # SWE.retrieve_word_embeddings(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_wordembedding\sciart_model') # extract word embeddings
+    SWE.retrieve_word_embeddings(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_wordembedding\sciart_model') # extract word embeddings
 
 

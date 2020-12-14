@@ -5,6 +5,7 @@ import json
 
 from word_embedding_ricocorpus import word_embedding_ricocorpus
 from Processing import Tex_Processing
+from Process_sciart import Process_Sciart
 from word_embedding import Sciart_Word_Embedding
 from atom_embedding import Atom_Embedder
 from atom_tag_pairing import Atom_Tag_Pairing
@@ -16,13 +17,11 @@ from Atom_RNN import Atom_RNN
 
 
 
-train_rnn_dict = dict()
-train_tags = []
-train_atoms = []
+atom_dict = dict()
 
-test_rnn_dict = dict()
-test_tags = []
-test_atoms = []
+atom_tags = []
+atoms = []
+
 
 with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Atom_RNN\doc_dict.pkl', 'rb') as f1:
     doc_dict = pickle.load(f1)
@@ -33,35 +32,31 @@ with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_wordembedd
 model = keras.models.load_model(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_wordembedding\sciart_model')
 weights = model.layers[0].get_weights()[0]
 
-ii = 0
 for key, value in doc_dict.items():
-    if ii  < 0.8*len(doc_dict):
-        train_rnn_dict[key] = value
-        tag_dict = value['tag_dict']
-        para_dict = value['para_dict']
-        train_tags.append(tag_dict['tags'])
-        train_atoms.append(para_dict['paragraph'])
 
-    else:
-        test_rnn_dict[key] = value
-        tag_dict = value['tag_dict']
-        para_dict = value['para_dict']
-        test_tags.append(tag_dict['tags'])
-        test_atoms.append(para_dict['paragraph'])
-    ii += 1
+    atom_dict[key] = value
+    tag = value['tag_dict']
+    para = value['para_dict']
+    atom_tags.append(tag['tags'])
+    atoms.append(para['paragraph'])
 
 
-print(len(train_tags))
-print(len(train_atoms))
+print(len(atom_tags))
+print(len(atoms))
 
-print(len(test_tags))
-print(len(test_atoms))
+with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\raw_ricoparas.pkl', 'wb') as f00:
+    pickle.dump(atoms, f00)
 
+with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\raw_ricotags.pkl', 'wb') as f01:
+    pickle.dump(atom_tags, f01)
 # TP = Tex_Processing(training_data=train_atoms, testing_data=test_atoms, vocab=vocab)
 # TP.word_to_vec(vocab)
 # xtrain, xtest = TP.return_encodes()
 
-SAW = Sciart_Word_Embedding()
+SWE = Sciart_Word_Embedding(data=atoms,
+                            vocab_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\sciart_vocab.pkl',
+                            model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\sciart_model',
+                            )
 
 
 AE = Atom_Embedder(weights, vocab)
