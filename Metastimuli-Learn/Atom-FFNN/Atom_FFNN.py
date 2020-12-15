@@ -211,25 +211,25 @@ class Atom_FFNN:
             )
         return self.history
 
-    def train_val(self):
-        try:
-            self.history = self.model.fit(
-                self.data, self.train_labels, epochs=self.epochs, batch_size=self.batch_size, shuffle=True # shuffles batches
-                ,verbose=1 # supresses progress bar
-                , validation_data=(self.val_data, self.val_labels)
-                , validation_steps=int(len(self.val_data) / self.batch_size)
-            )
-        except ValueError:
-            self.val_data = self.val_data.T
-            self.data = self.data.T
-            self.history = self.model.fit(
-                self.data, self.train_labels, epochs=self.epochs, batch_size=self.batch_size, shuffle=True
-                # shuffles batches
-                , verbose=1  # supresses progress bar
-                , validation_data=(self.val_data, self.val_labels)
-                , validation_steps=int(len(self.val_data)/self.batch_size)
-            )
-        return self.history
+    # def train_val(self):
+    #     try:
+    #         self.history = self.model.fit(
+    #             self.data, self.train_labels, epochs=self.epochs, batch_size=self.batch_size, shuffle=True # shuffles batches
+    #             ,verbose=1 # supresses progress bar
+    #             , validation_data=(self.val_data, self.val_labels)
+    #             , validation_steps=int(len(self.val_data) / self.batch_size)
+    #         )
+    #     except ValueError:
+    #         self.val_data = self.val_data.T
+    #         self.data = self.data.T
+    #         self.history = self.model.fit(
+    #             self.data, self.train_labels, epochs=self.epochs, batch_size=self.batch_size, shuffle=True
+    #             # shuffles batches
+    #             , verbose=1  # supresses progress bar
+    #             , validation_data=(self.val_data, self.val_labels)
+    #             , validation_steps=int(len(self.val_data)/self.batch_size)
+    #         )
+    #     return self.history
 
     def test(self):
         try:
@@ -352,18 +352,18 @@ if __name__ == '__main__':
         set_batch_size = 10
         set_epochs = 1
         AFF = Atom_FFNN(
-            data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\train.pkl', # local atom vector path
-            train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\train_labels.pkl',
+            data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\train.pkl', # local atom vector path
+            train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\train_labels.pkl',
             batch_size=set_batch_size,
             epochs=set_epochs,
             regression=True,
             # classification=True,
             # model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\model50_proj',
-            save_model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\model50_proj',
+            save_model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\model50_proj',
 
-            test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\fulltest_atoms.pkl',
-            test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\fulltest_labels.pkl',
-            nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\fulltest_atoms.pkl',
+            test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\test.pkl',
+            test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\test_labels.pkl',
+            nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\test.pkl',
             # nullset_labels_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_rico\nulltest_set.pkl',
             dense_out=2,
             hidden=100,
@@ -371,7 +371,7 @@ if __name__ == '__main__':
             drop_per=.05
         )
 
-        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\nullfull_list_of_sets.pkl', 'rb') as f12:
+        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\nulltest.pkl', 'rb') as f12:
             null_list = pickle.load(f12)
         epochs = 50
         restr = []
@@ -382,6 +382,7 @@ if __name__ == '__main__':
         dict2 = dict()
         dict3 = dict()
         for ii in range(epochs):
+            print(f'Epoch: {ii}')
             history = AFF.train()
             tr_loss = history.history['loss']
             restr.append(tr_loss)
@@ -391,18 +392,18 @@ if __name__ == '__main__':
 
             for jj in range(len(null_list)):
                 AFF = Atom_FFNN(
-                                    data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\train.pkl', # local atom vector path
-                                    train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\train_labels.pkl',
+                                    data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\train.pkl', # local atom vector path
+                                    train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\train_labels.pkl',
                                     batch_size=set_batch_size,
                                     epochs=set_epochs,
                                     regression=True,
                                     # classification=True,
-                                    model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\model50_proj',
-                                    save_model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\model50_proj',
+                                    model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\model50_proj',
+                                    save_model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\model50_proj',
 
-                                    test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\fulltest_atoms.pkl',
-                                    test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\fulltest_labels.pkl',
-                                    nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\fulltest_atoms.pkl',
+                                    test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\test.pkl',
+                                    test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\test_labels.pkl',
+                                    nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\test.pkl',
                                     nullset_labels=null_list[jj],
                                     dense_out=2,
                                     hidden=100,
@@ -415,9 +416,9 @@ if __name__ == '__main__':
 
             null.append(mean(null_holder))
             null_holder = []
-        param_tr = 'ff_100ep_train_sciart_BOWavg_shuff_proj'
-        param_te = 'ff_100ep_test_sciart_BOWavg_shuff_proj'
-        param_null = 'ff_100ep_nullset_sciart_BOWavg_shuff_proj'
+        param_tr = 'ff_50ep_train_rico_BOWsum_shuff_proj'
+        param_te = 'ff_50ep_test_rico_BOWsum_shuff_proj'
+        param_null = 'ff_50ep_nullset_rico_BOWsum_shuff_proj'
 
         with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Metastimuli-Learn\Atom-FFNN\regress_graph_data.pkl', 'rb') as f10:
             graph_dict = pickle.load(f10)
@@ -434,8 +435,17 @@ if __name__ == '__main__':
         dict3['epochs'] = epochs
         graph_dict[param_null] = dict3
 
+
+
+
+
         with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Metastimuli-Learn\Atom-FFNN\regress_graph_data.pkl', 'wb') as f11:
             pickle.dump(graph_dict, f11)
+
+
+
+
+
         # training and saving
         # AFF.mod_labels() # only for regression
         # history = AFF.train()
@@ -482,12 +492,12 @@ if __name__ == '__main__':
 
 
         # use case
-        # results = AFF.predict()
-        # #
-        # print(results)
-        # #
-        # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\prediction.pkl', 'wb') as f5:
-        #     pickle.dump(results, f5)
+        res = AFF.predict()
+
+        print(res)
+
+        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_sciart\prediction.pkl', 'wb') as f5:
+            pickle.dump(res, f5)
 
 
         #
