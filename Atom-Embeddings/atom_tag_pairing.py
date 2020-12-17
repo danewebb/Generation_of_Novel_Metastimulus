@@ -168,8 +168,8 @@ class Atom_Tag_Pairing():
 
 
 if __name__ == '__main__':
-    with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\test_data.json', 'rb') as f1:
-        data = json.load(f1)
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\doc_dict.pkl', 'rb') as f1:
+        data = pickle.load(f1)
 
     with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\adjacency_train.json', 'rb') as f2:
         adj = json.load(f2)
@@ -179,23 +179,23 @@ if __name__ == '__main__':
 
 
     # Training labels
-    # ATP = Atom_Tag_Pairing(data, adjacency=adj, projection=proj)
-    #
-    # ATP.tag_pairing()
-    # # labels = ATP.one_hotify()
-    # labels = ATP.projection_vectors()
-    # with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\test_labels_proj.pkl', 'wb') as f4:
-    #     pickle.dump(labels, f4)
+    ATP = Atom_Tag_Pairing(data, adjacency=adj, projection=proj)
+
+    ATP.tag_pairing()
+    # labels = ATP.one_hotify()
+    labels = ATP.projection_vectors()
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels.pkl', 'wb') as f4:
+        pickle.dump(labels, f4)
 
     # Inverse
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\prediction.pkl', 'rb') as f5:
-        pred = pickle.load(f5)
-    ATP = Atom_Tag_Pairing(data, adjacency=adj, projection=proj.T, prediction=pred)
-    nearest_projections = ATP.nearest_neighbor()
-    predicted_nodes = ATP.proj_to_nodes()
-
-    print('hello world')
+    # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\prediction.pkl', 'rb') as f5:
+    #     pred = pickle.load(f5)
+    # ATP = Atom_Tag_Pairing(data, adjacency=adj, projection=proj.T, prediction=pred)
+    # nearest_projections = ATP.nearest_neighbor()
+    # predicted_nodes = ATP.proj_to_nodes()
+    #
+    # print('hello world')
 
 
 

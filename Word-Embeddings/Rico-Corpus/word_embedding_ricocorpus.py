@@ -45,6 +45,8 @@ class word_embedding_ricocorpus():
 
         if model_path != '':
             self.model = keras.models.load_model(model_path)
+        else:
+            self.build_model()
 
     def list_to_numpy(self):
         # non-csv path
@@ -55,10 +57,12 @@ class word_embedding_ricocorpus():
         self.padded_data = keras.preprocessing.sequence.pad_sequences(
             data_arr, padding='post')
 
+
         # dummy labels
         tdata_size = np.shape(data_arr)
         labels = np.zeros([tdata_size[0], 1])
         self.labels = labels.astype('int32')
+
 
         # convert train_vec into tf dataset. Could be valuable.
 
@@ -71,35 +75,38 @@ class word_embedding_ricocorpus():
 
 
 
+
+
+    def build_model(self):
+        self.model = keras.Sequential([
+            layers.Embedding(self.vocab_size, self.embedding_dim),
+            layers.GlobalAveragePooling1D(),
+            layers.Dense(self.dense1_size, activation='relu'),
+            layers.Dense(self.dense2_size)
+        ])
+
+        self.model.summary()
+
+
+        self.model.compile(
+            optimizer='adam',
+            loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+            metrics=['accuracy']
+        )
+
     def train_embedding(self):
-        with tf.device('/cpu:0'): # gpu or cpu
-
-            model = keras.Sequential([
-                layers.Embedding(self.vocab_size, self.embedding_dim),
-                layers.GlobalAveragePooling1D(),
-                layers.Dense(self.dense1_size, activation='relu'),
-                layers.Dense(self.dense2_size)
-            ])
-
-            model.summary()
-
-
-            model.compile(
-                optimizer='adam',
-                loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-                metrics=['accuracy']
-            )
-
-            history = model.fit(
+        with tf.device('/cpu:0'):  # gpu or cpu
+            history = self.model.fit(
                 self.padded_data, self.labels,
                 epochs=self.set_epochs
                 , batch_size=self.batch_size
                 , shuffle=self.shuffling
+                , verbose=1
             )
 
             if self.save_location != '':
                 # save model
-                keras.models.save_model(model, self.save_location)
+                keras.models.save_model(self.model, self.save_location)
 
 
 
@@ -130,12 +137,12 @@ class word_embedding_ricocorpus():
 
 
 
-
-    def encoded_to_embed(self, ):
-        # Assigns corresponding vectors to the encoded word values.
-        for num, word in enumerate(self.vocab):  # 0 index of vocab is 0????
-            # loop through vocab and assign the correct weights to the vocab
-            self.embedded_vecs[num] = self.weights[num]
+    #
+    # def encoded_to_embed(self):
+    #     # Assigns corresponding vectors to the encoded word values.
+    #     for num, word in enumerate(self.vocab):  # 0 index of vocab is 0????
+    #         # loop through vocab and assign the correct weights to the vocab
+    #         self.embedded_vecs[num] = self.weights[num]
 
 
 if __name__ == '__main__':
@@ -147,18 +154,22 @@ if __name__ == '__main__':
     # with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\train_len.pkl', 'rb') as file1:
     #     train_lens = pickle.load(file1)
 
-    with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\test_vec.pkl', 'rb') as file:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data.pkl', 'rb') as file:
         data = pickle.load(file)
 
-    # lengths of each atom
-    with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\test_len.pkl', 'rb') as file1:
-        lens = pickle.load(file1)
 
     # vocab in order of most common -> least common
-    with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\ranked_vocab.pkl',
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ranked_vocab.pkl',
               'rb') as voc_file:
         vocab = pickle.load(voc_file)
 
-    wre = word_embedding_ricocorpus(data, vocab, 2, shuffling=True,
-                                    save_location=r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\ricocorpus_model')
 
+
+
+    wre = word_embedding_ricocorpus(data, vocab, 50, shuffling=True,
+                                    save_location=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_50dims',
+                                    set_epochs=10000
+                                    )
+
+    wre.list_to_numpy()
+    wre.train_embedding()

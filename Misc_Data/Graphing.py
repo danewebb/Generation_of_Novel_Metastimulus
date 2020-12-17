@@ -50,7 +50,7 @@ def plot_acc(graph_dict, x, y, title):
 
 
 
-def plot_pred_v_actual(prediction, actual, subx, suby, linestyles=[], order=[]):
+def plot_pred_v_actual(prediction, actual, subx, suby, title, linestyles=[], order=[]):
     x1 = []
     y1 = []
     x2 = []
@@ -74,11 +74,11 @@ def plot_pred_v_actual(prediction, actual, subx, suby, linestyles=[], order=[]):
     ac = np.asarray((x2, y2))
     tail = np.zeros((2,1))
     mm = 0
-    plt.show()
+    # plt.show()
     for jj in range(subx):
         for kk in range(suby):
-            ax[jj, kk].quiver((0, 0), (0, 0), ac[0, mm], ac[1, mm], scale=.1, color=colors[0])
-            ax[jj, kk].quiver((0, 0), (0, 0), pr[0, mm], pr[1, mm], scale=.1, color=colors[1])
+            ax[jj, kk].quiver((0, 0), (0, 0), ac[0, mm], ac[1, mm], scale=1, color=colors[0])
+            ax[jj, kk].quiver((0, 0), (0, 0), pr[0, mm], pr[1, mm], scale=1, color=colors[1])
             # ax.set_xlim(-0.5, 0.5)
             # ax.set_ylim(-0.5, 0.5)
 
@@ -87,7 +87,8 @@ def plot_pred_v_actual(prediction, actual, subx, suby, linestyles=[], order=[]):
             mm += 1
 
 
-    # plt.legend()
+    # plt.legend
+    fig.suptitle(title)
     plt.show()
 
 
@@ -111,47 +112,48 @@ def plot_one_loss(graph_dict, x, y, title, colors, linestyles = [], dicts_wanted
             col_idx += 1
 
     plt.grid()
-    plt.legend(loc='best', bbox_to_anchor=(0.23, 0.62, 0.5, 0.5))
+    plt.legend(loc='best')#, bbox_to_anchor=(0.23, 0.62, 0.5, 0.5))
     plt.show()
 
 
 if __name__ == '__main__':
-    # x = 'Epochs'
-    # y = 'Loss'
-    # title = 'FF BOW-avg Shuffled Rico-corpus'
-    # colors = ['r', 'g', 'b']
-    # linestyles = ['solid', 'dashed', 'dotted']
-    # layer_order = [10, 5, 0]
-    # # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Metastimuli-Learn\Atom-FFNN\graphing_data.pkl', 'rb') as f1:
-    # #     prob_graph_dict = pickle.load(f1)
-    # #
-    # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Metastimuli-Learn\Atom-FFNN\regress_graph_data.pkl', 'rb') as f2:
-    #     regress_graph_dict = pickle.load(f2)
+    x = 'Epochs'
+    y = 'Loss'
+    title = 'FF BOW-sum Shuffled Sciart'
+    colors = ['r', 'g', 'b']
+    linestyles = ['solid', 'dashed', 'dotted']
+    layer_order = [10, 5, 0]
+    # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Metastimuli-Learn\Atom-FFNN\graphing_data.pkl', 'rb') as f1:
+    #     prob_graph_dict = pickle.load(f1)
     #
-    # # plot_loss(regress_graph_dict, 'Epochs', 'Loss', 'Plot1')
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\results_2dims.pkl', 'rb') as f2:
+        graph_dict = pickle.load(f2)
+
+    # plot_loss(regress_graph_dict, 'Epochs', 'Loss', 'Plot1')
+
+
+    dicts_wanted = [
+        'ff_50ep_train_rico2dims_BOWavg',
+        'ff_50ep_test_rico2dims_BOWavg',
+        'ff_50ep_nullset_rico2dims_BOWavg'
+                    ]
+    shift = [
+        'ff_50ep_test_rico2dims_BOWavg',
+        'ff_50ep_nullset_rico2dims_BOWavg'
+    ]
+    plot_one_loss(graph_dict, x, y, title, colors, dicts_wanted=dicts_wanted, linestyles=linestyles, order=layer_order, shift=shift)
+
+
+
+    # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\prediction.pkl', 'rb') as f3:
+    #     pred = pickle.load(f3)
     #
+    # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\train_labels.pkl', 'rb') as f4:
+    #     act = pickle.load(f4)
     #
-    # dicts_wanted = [
-    #     'ff_50ep_train_rico_BOWavg_shuff_proj',
-    #     'ff_50ep_test_rico_BOWavg_shuff_proj',
-    #     'ff_50ep_nullset_rico_BOWavg_shuff_proj'
-    #                 ]
-    # shift = [
-    #     'ff_50ep_test_rico_BOWavg_shuff_proj',
-    #     'ff_50ep_nullset_rico_BOWavg_shuff_proj'
-    # ]
-    # plot_one_loss(regress_graph_dict, x, y, title, colors, dicts_wanted=dicts_wanted, linestyles=linestyles, order=layer_order, shift=shift)
-
-
-
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\prediction.pkl', 'rb') as f3:
-        pred = pickle.load(f3)
-
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\train_labels.pkl', 'rb') as f4:
-        act = pickle.load(f4)
-
-    subx = 3
-    suby = 3
-    line = ['solid', 'dashed']
-    ord = [5, 0]
-    plot_pred_v_actual(pred, act, subx, suby, linestyles=line, order=ord)
+    # title = 'Prediction vs. Actual FF BOW-avg Sciart'
+    # subx = 3
+    # suby = 3
+    # line = ['solid', 'dashed']
+    # ord = [5, 0]
+    # plot_pred_v_actual(pred, act, subx, suby, title, linestyles=line, order=ord)

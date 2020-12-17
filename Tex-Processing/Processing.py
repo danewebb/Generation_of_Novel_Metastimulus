@@ -14,36 +14,20 @@ class Tex_Processing():
     This class handles splitting data between
     """
 
-    def __init__(self, training_data=None, testing_data=None, vocab=None, training_data_dir='', testing_data_dir='', vocab_dir=''):
-        self.xtrain = []
-        self.ytrain = []
+    def __init__(self, data=None, data_dir='', vocab=None, vocab_dir=''):
 
-        self.xtest = []
-        self.ytest = []
 
-        self.embedxtrain = []
-        self.embedxtest = []
-
-        self.train_lens = []
-        self.test_lens = []
-
-        if training_data_dir != '':
-            with open(training_data_dir, 'rb') as training_data:
-                self.train_data =  pickle.load(training_data)
-        elif training_data != None:
-            self.xtrain = training_data
+        if data != None:
+            self.data = data
+        elif data_dir != '':
+            with open(data_dir, 'rb') as f1:
+                self.data = pickle.load(f1)
         else:
-            ValueError('Training data is not defined')
+            raise ValueError('No valid data in input')
 
-        if testing_data_dir != '':
-            with open(testing_data_dir, 'rb') as testing_data:
-                self.test_data = pickle.load(testing_data)
-        elif testing_data != None:
-            self.xtest = testing_data
-        else:
-            ValueError('Testing data is not defined')
+        self.encoded_data = []
 
-
+        self.data_lens = []
         # with open(train_projection, 'rb') as train_labels:
         #     self.train_plabels = pickle.load(train_labels)
 
@@ -63,62 +47,62 @@ class Tex_Processing():
 
 
 
-    def split_data(self):
-        """
-        grab paragraphs from the master dictionary.
-        :return:
-        """
-
-        if self.train_data == None or self.test_data == None:
-            ValueError('Both training and testing datasets must exist.')
-
-        if self.train_data is not dict:
-            TypeError('training_data argument must be a dictionary.')
-
-
-        for value in self.train_data.values():
-            paradict = value['para_dict']
-            self.xtrain.append(paradict['paragraph'])
-
-        for value in self.test_data.values():
-            paradict = value['para_dict']
-            self.xtest.append(paradict['paragraph'])
-
-
+    # def split_data(self):
+    #     """
+    #     grab paragraphs from the master dictionary.
+    #     :return:
+    #     """
+    #
+    #     if self.train_data == None or self.test_data == None:
+    #         ValueError('Both training and testing datasets must exist.')
+    #
+    #     if self.train_data is not dict:
+    #         TypeError('training_data argument must be a dictionary.')
+    #
+    #
+    #     for value in self.train_data.values():
+    #         paradict = value['para_dict']
+    #         self.xtrain.append(paradict['paragraph'])
+    #
+    #     for value in self.test_data.values():
+    #         paradict = value['para_dict']
+    #         self.xtest.append(paradict['paragraph'])
 
 
-    def random_idx(self, random_state=24):
-        # randomize the data and labels. Keeps them paired but changes the indices of each paragraph/label combo
-        np.random.seed(random_state)
 
-        train_len = len(self.xtrain)
-        train_idx = list(range(train_len))
-        np.random.shuffle(train_idx)
-
-        # pre-allocate lists
-        new_xtrain = [None]*train_len
-        new_ytrain = [None]*train_len
-
-        for ii, idx in enumerate(train_idx):
-            new_xtrain[ii] = self.xtrain[idx]
-            new_ytrain[ii] = self.train_vectors[idx]
-
-        test_len = len(self.xtest)
-        test_idx = list(range(test_len))
-        np.random.shuffle(test_idx)
-        new_xtest = [None]*test_len
-        new_ytest = [None]*test_len
-
-        for ii, idx in enumerate(test_idx):
-            new_xtest[ii] = self.xtest[idx]
-            new_ytest[ii] = self.test_vectors[idx]
+    #
+    # def random_idx(self, random_state=24):
+    #     # randomize the data and labels. Keeps them paired but changes the indices of each paragraph/label combo
+    #     np.random.seed(random_state)
+    #
+    #     train_len = len(self.xtrain)
+    #     train_idx = list(range(train_len))
+    #     np.random.shuffle(train_idx)
+    #
+    #     # pre-allocate lists
+    #     new_xtrain = [None]*train_len
+    #     new_ytrain = [None]*train_len
+    #
+    #     for ii, idx in enumerate(train_idx):
+    #         new_xtrain[ii] = self.xtrain[idx]
+    #         new_ytrain[ii] = self.train_vectors[idx]
+    #
+    #     test_len = len(self.xtest)
+    #     test_idx = list(range(test_len))
+    #     np.random.shuffle(test_idx)
+    #     new_xtest = [None]*test_len
+    #     new_ytest = [None]*test_len
+    #
+    #     for ii, idx in enumerate(test_idx):
+    #         new_xtest[ii] = self.xtest[idx]
+    #         new_ytest[ii] = self.test_vectors[idx]
 
 
         # print(f'self.random_idx ending lengths\n'
         #       f'xtrain length = {len(new_xtrain)}, ytrain length = {len(new_xtrainhot)}\n'
         #       f'xtest length = {len(new_xtest)}, ytest length = {len(new_xtesthot)}\n')
 
-        return new_xtrain, new_ytrain, new_xtest, new_ytest
+        # return new_xtrain, new_ytrain, new_xtest, new_ytest
 
 
     def handle_vocab(self, threshold):
@@ -142,7 +126,7 @@ class Tex_Processing():
         para_vec = []
 
 
-        for paras in self.xtrain: # loops each item in the list
+        for paras in self.data: # loops each item in the list
 
             for para in paras: # takes the paragraph from the item
                 for let in para: # each letter in paragraph
@@ -167,81 +151,17 @@ class Tex_Processing():
                     else:
                         word_store.append(let)
 
-            self.embedxtrain.append(para_vec)
+            self.encoded_data.append(para_vec)
             para_vec = []
-
-
-
-
-        word_store = []
-        for paras in self.xtest:
-            for para in paras:
-                for let in para:
-                    if let == ' ':
-                        word = ''.join(word_store)
-                        clean_word = self.word_cleaner(word)
-                        word_store = []
-
-                        for idx, w in enumerate(vocab):
-                            if w == clean_word:
-                                para_vec.append(idx)
-                                break
-                            elif w == word:
-                                para_vec.append(idx)
-                                break
-                            elif idx == len(vocab) - 1:
-                                para_vec.append(0)
-                                break
-
-                    else:
-                        word_store.append(let)
-
-            self.embedxtest.append(para_vec)
-            para_vec = []
-
-
-
-    def atom_embeddings(self):
-        """
-        Embed atoms by adding up the vectors of the constituent words
-        :return:
-        """
-        embedatom_train = []
-        embedatom_test = []
-        for para in self.embedxtrain:
-            vec = 0
-            for word in para:
-                vec += word
-            embedatom_train.append(vec)
-
-
-        for para in self.embedxtest:
-            vec = 0
-            for word in para:
-                vec += word
-            embedatom_test.append(vec)
-
-        return embedatom_train, embedatom_test
-
 
 
     def vec_lengths(self):
         ele_len = 0
-        for item in self.embedxtrain:
+        for item in self.data:
             for ele in item:
                 ele_len += 1
-            self.train_lens.append(ele_len)
+            self.data_lens.append(ele_len)
             ele_len = 0
-
-        for item in self.embedxtest:
-            for ele in item:
-                ele_len += 1
-            self.test_lens.append(ele_len)
-            ele_len = 0
-
-
-
-
 
 
     def word_cleaner(self, word):
@@ -262,35 +182,26 @@ class Tex_Processing():
     #         return nodes, vectors
 
 
-    def save_files(self, train_path='', test_path=''):
-        if train_path!='':
-            with open(train_path, 'wb') as f1:
-                pickle.dump(self.embedxtrain, f1)
-        if test_path != '':
-            with open(test_path, 'wb') as f2:
-                pickle.dump(self.embedxtest, f2)
+    def save_files(self, data_save_path=''):
+        if data_save_path!='':
+            with open(data_save_path, 'wb') as f1:
+                pickle.dump(self.data, f1)
 
 
-    def return_encodes(self):
-        # poorly named, these are encoded not embedded.
-        return self.embedxtrain, self.embedxtest
 
-
-    def main(self, train_vecs_path, test_vecs_path, threshold=1):
+    def main(self, encoded_data_path, threshold=1):
 
         # self.pims_labels()
 
         output_dict = dict()
-        vocab = self.handle_vocab(threshold)
-
-        self.split_data()
+        # vocab = self.handle_vocab(threshold)
         # Lets not make these class variables to
 
         # Randomize indices while keeping labels and para together.
         # train_para, train_lab, test_para, test_lab = self.random_idx(ytrain, ytest, random_state=random_state)
 
 
-        self.word_to_vec(vocab)
+        self.word_to_vec(self.vocab_data)
 
         # with open('ranked_vocab.pkl', 'wb') as rankvoc_file:
         #     pickle.dump(vocab, rankvoc_file)
@@ -298,11 +209,8 @@ class Tex_Processing():
         # with open('train_vec.pkl', 'wb') as file:
         #     pickle.dump(self.embedxtrain, file)
 
-        with open(train_vecs_path, 'wb') as train_vec_file:
-            pickle.dump(self.embedxtrain, train_vec_file)
-
-        with open(test_vecs_path, 'wb') as test_vec_file:
-            pickle.dump(self.embedxtest, test_vec_file)
+        with open(encoded_data_path, 'wb') as file:
+            pickle.dump(self.encoded_data, file)
 
         # embedatom_train, embedatom_test = self.atom_embeddings()
         # self.vec_lengths()
@@ -330,5 +238,6 @@ class Tex_Processing():
 
 
 if __name__ == '__main__':
-    PCS = Data_Processing('training_dict.pkl', 'testing_dict.pkl', 'rank_vocab.pkl', 'pims-filter/Projection.pkl')
-    PCS.main()
+    PCS = Tex_Processing(data_dir=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\raw_ricoparas.pkl',
+                         vocab_dir=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ranked_vocab.pkl')
+    PCS.main(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data.pkl')

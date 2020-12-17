@@ -10,10 +10,10 @@ from matplotlib import pyplot as plt
 from statistics import mean
 
 class Atom_FFNN:
-    def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='', val_path='', val_label_path='',
+    def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='',
                  model_path = '', save_model_path='', batch_size=10, epochs=100, nullset_path='', nullset_labels_path='', nullset_labels=None,
-                  drop_per=0.1, dense_out=2, dense_in=2, hidden=50,
-                 regression=False, classification=False):
+                  drop_per=0.1, dense_out=2, dense_in=2, hidden=50, current_dim=0,
+                 regression=False, classification=False, normalize=False):
 
 
         try:
@@ -23,10 +23,12 @@ class Atom_FFNN:
             print('Data path does not exist')
 
         if not isinstance(self.data, np.ndarray):
-            self.data = self.data_to_numpy(self.data)
+            self.data = self.data_to_numpy(self.data, dense_out)
         else:
             TypeError('data should be either ndarray or list')
 
+
+        self.current_dim = current_dim
         self.batch_size = batch_size
         self.epochs = epochs
         self.drop_per = drop_per
@@ -39,28 +41,21 @@ class Atom_FFNN:
             with open(nullset_path, 'rb') as null_file:
                 self.nullset = pickle.load(null_file)
             if not isinstance(self.nullset, np.ndarray):
-                self.nullset = self.data_to_numpy(self.nullset)
+                self.nullset = self.data_to_numpy(self.nullset, dense_out)
 
             # nullset is the randomized labels of the previous dataset
             try:
                 with open(nullset_labels_path, 'rb') as null_labels_file:
                     self.nullset_labels = pickle.load(null_labels_file)
                 if not isinstance(self.nullset_labels, np.ndarray):
-                    self.nullset_labels = self.data_to_numpy(self.nullset_labels)
+                    self.nullset_labels = self.data_to_numpy(self.nullset_labels, dense_out)
             except:
                 self.nullset_labels = nullset_labels
 
-        if val_path != '':
-            with open(val_path, 'rb') as val_file:
-                self.val_data = pickle.load(val_file)
-            if not isinstance(self.val_data, np.ndarray):
-                self.val_data = self.data_to_numpy(self.val_data)
+            if normalize==True:
+                self.nullset_labels = self.norm_labels(self.nullset_labels)
+            self.nullset_labels = self.splice_labels(self.nullset_labels, current_dim)
 
-
-            with open(val_label_path, 'rb') as val_label_file:
-                self.val_labels = pickle.load(val_label_file)
-            if not isinstance(self.val_labels, np.ndarray):
-                self.val_labels = self.data_to_numpy(self.val_labels)
 
 
         if test_path != '':
@@ -68,22 +63,29 @@ class Atom_FFNN:
             with open(test_path, 'rb') as test_file:
                 self.test_data = pickle.load(test_file)
             if not isinstance(self.test_data, np.ndarray):
-                self.test_data = self.data_to_numpy(self.test_data)
+                self.test_data = self.data_to_numpy(self.test_data, dense_out)
 
 
             with open(test_label_path, 'rb') as test_label_file:
                 self.test_labels = pickle.load(test_label_file)
             if not isinstance(self.test_labels, np.ndarray):
-                self.test_labels = self.data_to_numpy(self.test_labels)
+                self.test_labels = self.data_to_numpy(self.test_labels, dense_out)
+            if normalize == True:
+                self.test_labels = self.norm_labels(self.test_labels)
 
+            self.test_labels = self.splice_labels(self.test_labels, current_dim)
 
 
         if train_label_path != '':
             with open(train_label_path, 'rb') as train_label_file:
                 self.train_labels = pickle.load(train_label_file)
             if not isinstance(self.train_labels, (np.ndarray)):
-                self.train_labels = self.data_to_numpy(self.train_labels)
+                self.train_labels = self.data_to_numpy(self.train_labels, dense_out)
 
+            if normalize == True:
+                self.train_labels = self.norm_labels(self.train_labels)
+
+            self.train_labels = self.splice_labels(self.train_labels, current_dim)
         else:
             raise Exception('Train label path is not valid.')
 
@@ -110,25 +112,31 @@ class Atom_FFNN:
 
 
 
-    def mod_labels(self):
+
+    def norm_labels(self, labels):
 
         from sklearn import preprocessing
-        # self.train_labels = preprocessing.normalize(self.train_labels)
+        try:
+            y = preprocessing.normalize(labels)
+        except:
+            y = None
 
         # print(self.train_labels)
         # zeros have too great of an impact on zero column
         # for ii in range(len(self.train_labels)):
         #     if self.train_labels[ii,0] == 0 or self.train_labels[ii,0] == -0.0:
         #         self.train_labels[ii,0] = .9
+        return y
 
-    def data_to_numpy(self, lst):
+
+    def data_to_numpy(self, lst, dims):
         # make encoded data into numpy arrays
         holder = []
         for ele in lst:
             # converts list of lists into a numpy array
             if ele == []:
                 # check if empty list, not sure why empty lists are in the data.
-                ele = [0., 0.]
+                ele = list(np.zeros((dims, 1)))
             temp = np.array(ele)
             temp = temp.reshape((temp.shape[0], 1))
             holder.append(temp)
@@ -138,7 +146,12 @@ class Atom_FFNN:
 
         return arr
 
-
+    def splice_labels(self, labels, dim):
+        try:
+            labs = labels[:, dim]
+        except:
+            labs = None
+        return labs
 
     # def padding(self, data):
     #     # array padding with zeros
@@ -196,7 +209,9 @@ class Atom_FFNN:
 
 
 
+
     def train(self):
+
         try:
             self.history = self.model.fit(
                 self.data, self.train_labels, epochs=self.epochs, batch_size=self.batch_size, shuffle=True # shuffles batches
@@ -346,82 +361,95 @@ class Atom_FFNN:
 
 
 
-
 if __name__ == '__main__':
     with tf.device('/cpu:0'):
         set_batch_size = 10
         set_epochs = 1
-        AFF = Atom_FFNN(
-            data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\train.pkl', # local atom vector path
-            train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\train_labels.pkl',
-            batch_size=set_batch_size,
-            epochs=set_epochs,
-            regression=True,
-            # classification=True,
-            # model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\model50_proj',
-            save_model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\model50_proj',
 
-            test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\test.pkl',
-            test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\test_labels.pkl',
-            nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\test.pkl',
-            # nullset_labels_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_rico\nulltest_set.pkl',
-            dense_out=2,
-            hidden=100,
-            dense_in=2,
-            drop_per=.05
-        )
+        output_dimension = 2
 
-        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\nulltest.pkl', 'rb') as f12:
-            null_list = pickle.load(f12)
+        model_paths = [
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\model50_2dims_00',
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\model50_2dims_01'
+        ]
+        for dim in range(output_dimension):
+            AFF = Atom_FFNN(
+                data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\train.pkl', # local atom vector path
+                train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\train_labels.pkl',
+                batch_size=set_batch_size,
+                epochs=set_epochs,
+                regression=True,
+                # classification=True,
+                # model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\model50_proj',
+                save_model_path=model_paths[dim],
+
+                test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\test.pkl',
+                test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\test_labels.pkl',
+                nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\test.pkl',
+                # nullset_labels_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_rico\nulltest_set.pkl',
+                dense_out=1,
+                hidden=100,
+                dense_in=2,
+                drop_per=.05,
+                # normalize=True
+            )
+
+
+        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\nulltest_2dims.pkl', 'rb') as f12:
+            null_arr = pickle.load(f12)
+
         epochs = 50
-        restr = []
-        reste = []
-        null = []
+        restr = np.empty((output_dimension, epochs + 1))
+        reste = np.empty((output_dimension, epochs))
+        null = np.empty((output_dimension, epochs, null_arr.shape[2]))
         null_holder = []
         dict1 = dict()
         dict2 = dict()
         dict3 = dict()
-        for ii in range(epochs):
-            print(f'Epoch: {ii}')
-            history = AFF.train()
-            tr_loss = history.history['loss']
-            restr.append(tr_loss)
-            AFF.save_model()
-            te_loss, _ = AFF.test()
-            reste.append(te_loss)
 
-            for jj in range(len(null_list)):
-                AFF = Atom_FFNN(
-                                    data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\train.pkl', # local atom vector path
-                                    train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\train_labels.pkl',
-                                    batch_size=set_batch_size,
-                                    epochs=set_epochs,
-                                    regression=True,
-                                    # classification=True,
-                                    model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\model50_proj',
-                                    save_model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\model50_proj',
+        for dim in range(output_dimension):
+            for ii in range(epochs):
+                print(f'Epoch: {ii}')
+                history = AFF.train()
+                restr[dim, ii] = history.history['loss']
 
-                                    test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\test.pkl',
-                                    test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\test_labels.pkl',
-                                    nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\test.pkl',
-                                    nullset_labels=null_list[jj],
-                                    dense_out=2,
-                                    hidden=100,
-                                    dense_in=2,
-                                    drop_per=.05
-                                )
-                null_loss, _ = AFF.test_nullset()
-                null_holder.append(null_loss)
+                AFF.save_model()
+                reste[dim, ii], _ = AFF.test()
 
 
-            null.append(mean(null_holder))
-            null_holder = []
-        param_tr = 'ff_50ep_train_rico_BOWsum_shuff_proj'
-        param_te = 'ff_50ep_test_rico_BOWsum_shuff_proj'
-        param_null = 'ff_50ep_nullset_rico_BOWsum_shuff_proj'
+                for jj in range(null_arr.shape[2]):
+                    AFF = Atom_FFNN(
+                                        data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\train.pkl', # local atom vector path
+                                        train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\train_labels.pkl',
+                                        batch_size=set_batch_size,
+                                        epochs=set_epochs,
+                                        regression=True,
+                                        # classification=True,
+                                        model_path=model_paths[dim],
+                                        save_model_path=model_paths[dim],
 
-        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Metastimuli-Learn\Atom-FFNN\regress_graph_data.pkl', 'rb') as f10:
-            graph_dict = pickle.load(f10)
+                                        test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\test.pkl',
+                                        test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\test_labels.pkl',
+                                        nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\test.pkl',
+                                        nullset_labels=null_arr[:, :, jj],
+                                        dense_out=1,
+                                        hidden=100,
+                                        dense_in=2,
+                                        drop_per=.05,
+                                        normalize=True
+                                    )
+                    null[dim, ii, jj], _ = AFF.test_nullset()
+
+
+
+
+        param_tr = 'ff_50ep_train_rico2dims_BOWavg'
+        param_te = 'ff_50ep_test_rico2dims_BOWavg'
+        param_null = 'ff_50_nullset_rico2dims_BOWavg'
+
+        # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\results_2dims.pkl', 'rb') as f10:
+        #     graph_dict = pickle.load(f10)
+        graph_dict = dict()
 
         dict1['loss'] = restr
         dict1['epochs'] = epochs
@@ -439,7 +467,7 @@ if __name__ == '__main__':
 
 
 
-        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Metastimuli-Learn\Atom-FFNN\regress_graph_data.pkl', 'wb') as f11:
+        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\results_2dims.pkl', 'wb') as f11:
             pickle.dump(graph_dict, f11)
 
 
@@ -496,7 +524,7 @@ if __name__ == '__main__':
 
         print(res)
 
-        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_sciart\prediction.pkl', 'wb') as f5:
+        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\prediction.pkl', 'wb') as f5:
             pickle.dump(res, f5)
 
 

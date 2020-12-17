@@ -56,16 +56,17 @@ class Atom_Embedder:
         n = 2: difference between each vector then a difference between resultant then sum.
         n = 3, 4, 5, ...
         :param atom:
-        :param n: Number of delta dimensions
+        :param n: Number of deltas
         :return:
         """
+
         diff1 = []
         diff2 = self.__init_diffs(atom)
         L = len(diff2)
         n -= 1
         while n > 0 and L > 1:
-            for ii in range(0, L-1):
-                diff1.append(diff2[ii+1] - diff2[ii])
+            for ii in range(0, L - 1):
+                diff1.append(diff2[ii + 1] - diff2[ii])
             n -= 1
             L = len(diff1)
             diff2 = diff1
@@ -155,13 +156,13 @@ class Atom_Embedder:
 if __name__ == '__main__':
     atom_vecs = []
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Sciart-Processing\sciart_vocab.pkl', 'rb') as voc_file:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ranked_vocab.pkl', 'rb') as voc_file:
         vocab = pickle.load(voc_file)
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\ricocorpus_sciart_encoded.pkl', 'rb') as vec_file:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data.pkl', 'rb') as vec_file:
         encoded = pickle.load(vec_file)
 
-    model = tf.keras.models.load_model(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\sciart_model')
+    model = tf.keras.models.load_model(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_10dims')
 
     AE = Atom_Embedder(model.layers[0].get_weights()[0], vocab)
 
@@ -176,7 +177,7 @@ if __name__ == '__main__':
 
     # saving
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\BOWsum_sciart\all_atoms.pkl', 'wb') as file:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\all_atoms.pkl', 'wb') as file:
         pickle.dump(atom_vecs, file)
 
 
