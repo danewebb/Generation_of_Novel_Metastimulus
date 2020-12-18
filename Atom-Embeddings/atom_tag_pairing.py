@@ -15,6 +15,7 @@ class Atom_Tag_Pairing():
         self.adj = adjacency
         self.proj = projection
 
+        self.dims = np.shape(self.proj)[0]
         self.pred = prediction # output vector from the NN
 
         self.tagnum = [] # stores adjacency tag groups.
@@ -82,7 +83,7 @@ class Atom_Tag_Pairing():
         tagvec = []
         for num in self.tagnum:
             if num == lenva:
-                tagvec.append(np.zeros([2, 1]))
+                tagvec.append(np.zeros([self.dims, 1]))
             else:
                 temp = self.proj[:, num]
                 temp = temp.reshape((temp.shape[0], 1))
@@ -174,17 +175,17 @@ if __name__ == '__main__':
     with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\adjacency_train.json', 'rb') as f2:
         adj = json.load(f2)
 
-    with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\Projection.pkl', 'rb') as f3:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_10dims.pkl', 'rb') as f3:
         proj = pickle.load(f3)
 
-
+    # r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\Projection.pkl'
     # Training labels
     ATP = Atom_Tag_Pairing(data, adjacency=adj, projection=proj)
 
     ATP.tag_pairing()
     # labels = ATP.one_hotify()
     labels = ATP.projection_vectors()
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels.pkl', 'wb') as f4:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_10dims.pkl', 'wb') as f4:
         pickle.dump(labels, f4)
 
     # Inverse
