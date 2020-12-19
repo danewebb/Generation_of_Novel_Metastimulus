@@ -420,12 +420,12 @@ if __name__ == '__main__':
                 normalize=False
             )
 
-
             AFF.save_model()
+
         with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\nulltest_2dims.pkl', 'rb') as f12:
             null_arr = pickle.load(f12)
 
-        epochs = 1
+        epochs = 25
         restr = np.empty((output_dimension, epochs))
         reste = np.empty((output_dimension, epochs))
         null = np.empty((output_dimension, epochs, null_arr.shape[2]))
@@ -473,9 +473,9 @@ if __name__ == '__main__':
                     null[dim, ii, jj], _ = AFF.test_nullset()
 
 
-        # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\results_2dims.pkl', 'rb') as f10:
-        #     graph_dict = pickle.load(f10)
-        graph_dict = dict()
+        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\results_2dims.pkl', 'rb') as f10:
+            graph_dict = pickle.load(f10)
+        # graph_dict = dict()
 
 
 
