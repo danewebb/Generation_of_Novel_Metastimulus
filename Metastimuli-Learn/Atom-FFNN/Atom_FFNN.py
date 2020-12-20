@@ -382,10 +382,11 @@ if __name__ == '__main__':
         set_batch_size = 10
         set_epochs = 1
 
+        curdim = 0
         model_paths = [
-            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_2dims_00',
-            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_2dims_01',
-        #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_02',
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\model50_3dims_00',
+            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\model50_3dims_01',
+            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\model50_3dims_02',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_03',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_04',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_05',
@@ -395,22 +396,31 @@ if __name__ == '__main__':
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_09',
         ]
 
-        output_dimension = len(model_paths)
 
+        tr_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\train.pkl'
+        trlabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\train_labels.pkl'
+
+        te_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\test.pkl'
+        telabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\test_labels.pkl'
+
+
+
+        output_dimension = len(model_paths)
         for dim in range(output_dimension):
             AFF = Atom_FFNN(
-                data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\train.pkl', # local atom vector path
-                train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\train_labels.pkl',
+                data_path= tr_path, # local atom vector path
+                train_label_path= trlabels_path,
                 batch_size=set_batch_size,
                 epochs=set_epochs,
                 regression=True,
                 # classification=True,
-                # model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWsum_rico\model50_proj',
+                # model_path=model_paths[dim],
                 save_model_path=model_paths[dim],
-                current_dim=dim,
-                test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\test.pkl',
-                test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\test_labels.pkl',
-                nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\test.pkl',
+                # current_dim=dim,
+                current_dim=curdim,
+                test_path=te_path,
+                test_label_path=telabels_path,
+                nullset_path=te_path,
                 # nullset_labels_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_rico\nulltest_set.pkl',
                 learning_rate=0.1,
                 dense_out=1,
@@ -422,7 +432,7 @@ if __name__ == '__main__':
 
             AFF.save_model()
 
-        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\nulltest_2dims.pkl', 'rb') as f12:
+        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\nulltest_3dims.pkl', 'rb') as f12:
             null_arr = pickle.load(f12)
 
         epochs = 25
@@ -449,19 +459,20 @@ if __name__ == '__main__':
                 num_nulls = null_arr.shape[2]
                 for jj in range(num_nulls):
                     AFF = Atom_FFNN(
-                        data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\train.pkl',
+                        data_path=tr_path,
                         # local atom vector path
-                        train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\train_labels.pkl',
+                        train_label_path=trlabels_path,
                         batch_size=set_batch_size,
                         epochs=set_epochs,
                         regression=True,
                         # classification=True,
                         model_path=model_paths[dim],
                         save_model_path=model_paths[dim],
-                        current_dim=dim,
-                        test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\test.pkl',
-                        test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\test_labels.pkl',
-                        nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\test.pkl',
+                        # current_dim=dim,
+                        current_dim=curdim,
+                        test_path=te_path,
+                        test_label_path=telabels_path,
+                        nullset_path=te_path,
                         nullset_labels=null_arr[:, :, jj],
                         learning_rate=0.1,
                         dense_out=1,
@@ -473,17 +484,17 @@ if __name__ == '__main__':
                     null[dim, ii, jj], _ = AFF.test_nullset()
 
 
-        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\results_2dims.pkl', 'rb') as f10:
+        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\results_3dims.pkl', 'rb') as f10:
             graph_dict = pickle.load(f10)
         # graph_dict = dict()
 
+        null_avg = np.average(null, axis=2)
 
 
-
-        param_tr = 'ff_25ep_train_rico10dims_BOWavg_proj2'
-        param_te = 'ff_25ep_test_rico10dims_BOWavg_proj2'
-        param_null = 'ff_25_nullset_rico10dims_BOWavg_proj2'
-        param_pred = 'ff_25_pred_rico10dims_BOWavg_proj2'
+        param_tr = 'ff_25ep_train_rico10dims_BOWavg_w3_00'
+        param_te = 'ff_25ep_test_rico10dims_BOWavg_w3_00'
+        param_null = 'ff_25ep_nullset_rico10dims_BOWavg_w3_00'
+        param_pred = 'ff_25ep_pred_rico10dims_BOWavg_w3_00'
 
 
         dict1['loss'] = restr
@@ -494,7 +505,7 @@ if __name__ == '__main__':
         dict2['epochs'] = epochs
         graph_dict[param_te] = dict2
 
-        dict3['loss'] = null
+        dict3['loss'] = null_avg
         dict3['epochs'] = epochs
         graph_dict[param_null] = dict3
 
@@ -502,19 +513,20 @@ if __name__ == '__main__':
 
         for dim in range(output_dimension):
             AFF = Atom_FFNN(
-                data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\train.pkl',
+                data_path=tr_path,
                 # local atom vector path
-                train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\train_labels.pkl',
+                train_label_path=trlabels_path,
                 batch_size=set_batch_size,
                 epochs=set_epochs,
                 regression=True,
                 # classification=True,
                 model_path=model_paths[dim],
                 save_model_path=model_paths[dim],
-                current_dim=dim,
-                test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\test.pkl',
-                test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\test_labels.pkl',
-                nullset_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\test.pkl',
+                # current_dim=dim,
+                current_dim=curdim,
+                test_path=te_path,
+                test_label_path=telabels_path,
+                nullset_path=te_path,
                 nullset_labels=null_arr[:, :, jj],
                 learning_rate=0.1,
                 dense_out=1,
@@ -530,7 +542,7 @@ if __name__ == '__main__':
         graph_dict[param_pred] = dict4
 
         with open(
-                r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\results_2dims.pkl',
+                r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\results_3dims.pkl',
                 'wb') as f11:
             pickle.dump(graph_dict, f11)
 

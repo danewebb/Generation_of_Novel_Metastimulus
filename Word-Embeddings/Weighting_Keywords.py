@@ -10,8 +10,10 @@ from nltk.stem import WordNetLemmatizer
 class Weighting_Keyword:
 
     def __init__(self, paras, tags=None,
-                 wV=1, wI=1, wS=1, wR=1, wC=1, wL=1, wD=1, wA=1, wT=1, wB=1, wf=1, wv=1, wk=1, wM=1, wTO=1, wOM=1,
-                 wJ=1, wP=1, wQ=1, wFC=1, wFR=1, wq=1, wTE=1, wTC=1, wTR=1, wFL=1
+                 wV=1.0, wI=1.0, wS=1.0, wR=1.0, wC=1.0, wL=1.0, wD=1.0,
+                 wA=1.0, wT=1.0, wB=1.0, wf=1.0, wv=1.0, wk=1.0, wM=1.0,
+                 wTO=1.0, wOM=1.0, wJ=1.0, wP=1.0, wQ=1.0, wFC=1.0,
+                 wFR=1.0, wq=1.0, wTE=1.0, wTC=1.0, wTR=1.0, wFL=1.0
                  ):
         self.raw_paras = paras
         self.tags = tags
@@ -145,18 +147,24 @@ class Weighting_Keyword:
 
 
 if __name__ == '__main__':
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\doc_dict.pkl', 'rb') as f1:
-        doc = pickle.load(f1)
     with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\raw_ricoparas.pkl', 'rb') as f2:
         raw_paras = pickle.load(f2)
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\raw_ricotags.pkl', 'rb') as f3:
-        tags =  pickle.load(f3)
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\all_atoms.pkl', 'rb') as f4:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\all_atoms.pkl', 'rb') as f4:
         atoms = pickle.load(f4)
 
 
 
-    WK = Weighting_Keyword(raw_paras, tags)
-    WK.keyword_search()
-    WK.apply_weights(atoms)
 
+
+    WK = Weighting_Keyword(raw_paras,
+                           wV=1.1, wI=1.1, wS=1.9, wR=1.1, wC=1.1, wL=1.1, wD=1.9, wA=1.9, wT=1.9,
+                           wB=1.3, wf=1.3, wv=1.3, wk=1.3, wM=1.3, wTO=1.5,
+                           wOM=1.5, wJ=1.5, wP=1.7, wQ=1.7, wFC=1.7, wFR=1.7, wq=1.8, wTE=1.8,
+                           wTC=1.8, wTR=1.8, wFL=1.7
+                           )
+    WK.keyword_search()
+    weighted_ordered_atoms = WK.apply_weights(atoms)
+
+
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\weighted_all_atoms1.pkl', 'wb') as f5:
+        pickle.dump(weighted_ordered_atoms, f5)
