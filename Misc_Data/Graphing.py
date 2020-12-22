@@ -64,10 +64,10 @@ def plot_pred_v_actual(prediction, actual, subx, suby, title, linestyles=[], ord
     nplots = subx*suby
     for ii in range(nplots):
         num = np.random.randint(0, len(prediction))
-        x1.append(prediction[num, 0])
-        y1.append(prediction[num, 1])
-        x2.append(actual[num, 0])
-        y2.append(actual[num, 1])
+        x1.append(prediction[num, 1])
+        y1.append(prediction[num, 2])
+        x2.append(actual[num, 1])
+        y2.append(actual[num, 2])
 
 
     pr = np.asarray((x1, y1))
@@ -75,10 +75,11 @@ def plot_pred_v_actual(prediction, actual, subx, suby, title, linestyles=[], ord
     tail = np.zeros((2,1))
     mm = 0
     # plt.show()
+
     for jj in range(subx):
         for kk in range(suby):
-            ax[jj, kk].quiver((0, 0), (0, 0), ac[0, mm], ac[1, mm], scale=1, color=colors[0])
-            ax[jj, kk].quiver((0, 0), (0, 0), pr[0, mm], pr[1, mm], scale=1, color=colors[1])
+            ax[jj, kk].quiver((0, 0), (0, 0), ac[0, mm], ac[1, mm], scale=.05, color=colors[0])
+            ax[jj, kk].quiver((0, 0), (0, 0), pr[0, mm], pr[1, mm], scale=.05, color=colors[1])
             # ax.set_xlim(-0.5, 0.5)
             # ax.set_ylim(-0.5, 0.5)
 
@@ -119,7 +120,7 @@ def plot_one_loss(graph_dict, x, y, title, colors, linestyles = [], dicts_wanted
 if __name__ == '__main__':
     x = 'Epochs'
     y = 'Loss'
-    title = 'FF BOW-avg 10dim-rico 3dim-out 00'
+    title = 'FF ndelta 10dim-rico 3dim-out relu 02'
     colors = ['r', 'g', 'b']
     linestyles = ['solid', 'dashed', 'dotted']
     layer_order = [10, 5, 0]
@@ -133,13 +134,13 @@ if __name__ == '__main__':
 
 
     dicts_wanted = [
-        'ff_25ep_train_rico10dims_BOWavg_w3_01',
-        'ff_25ep_test_rico10dims_BOWavg_w3_01',
-        'ff_25ep_nullset_rico10dims_BOWavg_w3_01'
+        'ff_25ep_train_rico10dims_ndelta_w_5_500_3dim_relu_02',
+        'ff_25ep_test_rico10dims_ndelta_w_5_500_3dim_relu_02',
+        'ff_25ep_nullset_rico10dims_ndelta_w_5_500_3dim_relu_02'
                     ]
     shift = [
-        'ff_25ep_test_rico10dims_BOWavg_w3_01',
-        'ff_25ep_nullset_rico10dims_BOWavg_w3_01'
+        'ff_25ep_test_rico10dims_ndelta_w_5_500_3dim_relu_02',
+        'ff_25ep_nullset_rico10dims_ndelta_w_5_500_3dim_relu_02'
     ]
     plot_one_loss(graph_dict, x, y, title, colors, dicts_wanted=dicts_wanted, linestyles=linestyles, order=layer_order, shift=shift)
 
@@ -150,18 +151,23 @@ if __name__ == '__main__':
     #
 
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\train_labels.pkl', 'rb') as f4:
-        act3 = pickle.load(f4)
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_1_20_output_3Dims\train_labels.pkl', 'rb') as f4:
+        act = pickle.load(f4)
     #
     #
 
 
-    pred00 = graph_dict['ff_25ep_pred_rico10dims_BOWavg_w3_00']
-    pred01 = graph_dict['ff_25ep_pred_rico10dims_BOWavg_w3_01']
-    pred02 = graph_dict['ff_25ep_pred_rico10dims_BOWavg_w3_02']
+    pred00_dict = graph_dict['ff_25ep_pred_rico10dims_ndelta_w_1_20_3dim_relu_00']
+    pred01_dict = graph_dict['ff_25ep_pred_rico10dims_ndelta_w_1_20_3dim_relu_01']
+    pred02_dict = graph_dict['ff_25ep_pred_rico10dims_ndelta_w_1_20_3dim_relu_02']
 
+    pred00 = pred00_dict['prediction']; pred00 = np.reshape(pred00, (pred00.shape[1], 1))
+    pred01 = pred01_dict['prediction']; pred01 = np.reshape(pred01, (pred01.shape[1], 1))
+    pred02 = pred02_dict['prediction']; pred02 = np.reshape(pred02, (pred02.shape[1], 1))
+
+    pred = np.concatenate((pred00, pred01, pred02), axis=1)
     #
-    title = 'Prediction vs. Actual FF BOW-avg Sciart'
+    title = 'Prediction vs. Actual FF ndelta 10dim-rico 3dim-out 01-02'
     subx = 3
     suby = 3
     line = ['solid', 'dashed']

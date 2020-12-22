@@ -49,17 +49,43 @@ def split(x, y, trper, teper, valper=0):
 
     return train, train_labels, test, test_labels, val, val_labels
 
+def norm_all(train=None, test=None, null=None):
+    from sklearn import preprocessing
 
-# x1 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\train.pkl'
-# y1 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\train_labels.pkl'
-# x2 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\test.pkl'
-# y2 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\test_labels.pkl'
+    train_shape = np.shape(train)
+    test_shape = np.shape(test)
+    null_shape = np.shape(null)
+
+    if train_shape != ():
+        con = np.concatenate((train, test), axis=0)
+        y = preprocessing.normalize(con)
+        # y = preprocessing.MinMaxScaler(con)
+        trnorm = y[:train_shape[0], :]
+        tenorm = y[train_shape[0]:, :]
 
 
-x1 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\weighted_all_atoms1.pkl'
+        return trnorm, tenorm
+    else:
+        reshape_null = np.reshape(null, (null.shape[0]*null.shape[2], null.shape[1]))
+
+        y = preprocessing.normalize(reshape_null)
+        # y = preprocessing.MinMaxScaler(con)
+        nunorm = np.reshape(y, null.shape)
+        return nunorm
+
+
+
+# x1 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_1_20_output_3Dims\train.pkl'
+# y1 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_1_20_output_3Dims\train_labels.pkl'
+# x2 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_1_20_output_3Dims\test.pkl'
+# y2 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_1_20_output_3Dims\test_labels.pkl'
+# x3 = x2
+# y3 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_1_20_output_3Dims\nulltest_3dims.pkl'
+#
+x1 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\ndelta_rico\weighted_all_atoms_5_500.pkl'
 y1 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_3Dims.pkl'
-
-
+#
+#
 with open(x1, 'rb') as f1:
     xtr = pickle.load(f1)
 
@@ -71,6 +97,14 @@ with open(y1, 'rb') as f2:
 #
 # with open(y2, 'rb') as f4:
 #     yte = pickle.load(f4)
+#
+# with open(x3, 'rb') as f5:
+#     xnu = pickle.load(f5)
+#
+# with open(y3, 'rb') as f6:
+#     ynu = pickle.load(f6)
+
+
 
 
 xtr = data_to_numpy(xtr, 50)
@@ -118,13 +152,24 @@ for ii in range(np.random.randint(3, 13)):
 
 train, train_labels, test, test_labels, _, _ = split(xx, yy, 0.8, 0.2)
 
-with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\train.pkl', 'wb') as f5:
+
+# train, test = norm_all(train=xtr, test=xte)
+# train_labels, test_labels= norm_all(train=ytr, test=yte)
+# null_labels = norm_all(null=ynu)
+
+
+
+
+with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_5_500_output_3Dims\train.pkl', 'wb') as f5:
     pickle.dump(train, f5)
-with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\train_labels.pkl', 'wb') as f6:
+with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_5_500_output_3Dims\train_labels.pkl', 'wb') as f6:
     pickle.dump(train_labels, f6)
 
-with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\test.pkl', 'wb') as f7:
+with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_5_500_output_3Dims\test.pkl', 'wb') as f7:
     pickle.dump(test, f7)
-with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\test_labels.pkl', 'wb') as f8:
+with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_5_500_output_3Dims\test_labels.pkl', 'wb') as f8:
     pickle.dump(test_labels, f8)
 
+
+# with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_1_20_output_3Dims\null_labels_norm.pkl', 'wb') as f10:
+#     pickle.dump(null_labels, f10)

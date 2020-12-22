@@ -115,32 +115,7 @@ class Atom_FFNN:
         self.test_labels = self.splice_labels(self.test_labels, self.current_dim)
 
 
-    def norm_all(self, train, test, null):
-        from sklearn import preprocessing
 
-        train_shape = np.shape(train)
-        test_shape = np.shape(test)
-        null_shape = np.shape(null)
-
-        if null_shape == ():
-            con = np.concatenate((train, test), axis=0)
-            y = preprocessing.normalize(con)
-            # y = preprocessing.MinMaxScaler(con)
-            trnorm = y[:train_shape[0], :]
-            tenorm = y[train_shape[0]:train_shape[0] + test_shape[0], :]
-            nunorm = None
-        else:
-            con = np.concatenate((train, test, null), axis=0)
-            y = preprocessing.normalize(con)
-            # y = preprocessing.MinMaxScaler(con)
-            trnorm = y[:train_shape[0], :]
-            tenorm = y[train_shape[0]:train_shape[0] + test_shape[0], :]
-            nunorm = y[train_shape[0] + test_shape[0]:, :]
-
-
-
-
-        return trnorm, tenorm, nunorm
 
 
     def data_to_numpy(self, lst, dims):
@@ -184,9 +159,9 @@ class Atom_FFNN:
 
             # layers.Dense(self.dense2, activation='relu', input_shape=(2,)),
             layers.Dense(self.dense2, input_shape=(self.dense2,)),
-            layers.Dense(self.hidden, activation='sigmoid'),
+            layers.Dense(self.hidden, activation='relu'),
             layers.Dropout(self.drop_per),
-            layers.Dense(self.dense1, activation='linear')
+            layers.Dense(self.dense1, activation='sigmoid')
         ])
 
         sgd = keras.optimizers.SGD(learning_rate=self.learn_rate)
@@ -209,6 +184,7 @@ class Atom_FFNN:
 
             # layers.Dense(self.dense2, activation='relu', input_shape=(2,)),
             layers.Dense(self.dense2, input_shape=(self.dense2,)),
+            layers.Dense(self.hidden, activation='relu'),
             layers.Dense(self.hidden, activation='relu'),
             layers.Dropout(self.drop_per),
             layers.Dense(self.dense1, activation='sigmoid')
@@ -382,11 +358,11 @@ if __name__ == '__main__':
         set_batch_size = 10
         set_epochs = 1
 
-        curdim = 0
+        curdim = 1
         model_paths = [
-            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\model50_3dims_00',
-            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\model50_3dims_01',
-            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\model50_3dims_02',
+            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_5_500_output_3Dims\model150_3dims_relu_00',
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_5_500_output_3Dims\model150_3dims_relu_01',
+            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_5_500_output_3Dims\model25_3dims_relu_02',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_03',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_04',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_05',
@@ -397,11 +373,11 @@ if __name__ == '__main__':
         ]
 
 
-        tr_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\train.pkl'
-        trlabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\train_labels.pkl'
+        tr_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_5_500_output_3Dims\train.pkl'
+        trlabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_5_500_output_3Dims\train_labels.pkl'
 
-        te_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\test.pkl'
-        telabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\test_labels.pkl'
+        te_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_5_500_output_3Dims\test.pkl'
+        telabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_5_500_output_3Dims\test_labels.pkl'
 
 
 
@@ -414,7 +390,7 @@ if __name__ == '__main__':
                 epochs=set_epochs,
                 regression=True,
                 # classification=True,
-                # model_path=model_paths[dim],
+                model_path=model_paths[dim],
                 save_model_path=model_paths[dim],
                 # current_dim=dim,
                 current_dim=curdim,
@@ -422,7 +398,7 @@ if __name__ == '__main__':
                 test_label_path=telabels_path,
                 nullset_path=te_path,
                 # nullset_labels_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_rico\nulltest_set.pkl',
-                learning_rate=0.1,
+                learning_rate=0.02,
                 dense_out=1,
                 hidden=30,
                 dense_in=10,
@@ -432,7 +408,7 @@ if __name__ == '__main__':
 
             AFF.save_model()
 
-        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\Woutput_3Dims\nulltest_3dims.pkl', 'rb') as f12:
+        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_5_500_output_3Dims\nulltest_3dims.pkl', 'rb') as f12:
             null_arr = pickle.load(f12)
 
         epochs = 25
@@ -474,7 +450,7 @@ if __name__ == '__main__':
                         test_label_path=telabels_path,
                         nullset_path=te_path,
                         nullset_labels=null_arr[:, :, jj],
-                        learning_rate=0.1,
+                        learning_rate=0.02,
                         dense_out=1,
                         hidden=30,
                         dense_in=10,
@@ -491,10 +467,10 @@ if __name__ == '__main__':
         null_avg = np.average(null, axis=2)
 
 
-        param_tr = 'ff_25ep_train_rico10dims_BOWavg_w3_00'
-        param_te = 'ff_25ep_test_rico10dims_BOWavg_w3_00'
-        param_null = 'ff_25ep_nullset_rico10dims_BOWavg_w3_00'
-        param_pred = 'ff_25ep_pred_rico10dims_BOWavg_w3_00'
+        param_tr = 'ff_150ep_train_rico10dims_ndelta_w_5_500_3dim_relu_01_pt3'
+        param_te = 'ff_150ep_test_rico10dims_ndelta_w_5_500_3dim_relu_01_pt3'
+        param_null = 'ff_150ep_nullset_rico10dims_ndelta_w_5_500_3dim_relu_01_pt3'
+        param_pred = 'ff_150ep_pred_rico10dims_ndelta_w_5_500_3dim_relu_01_pt3'
 
 
         dict1['loss'] = restr
@@ -528,7 +504,7 @@ if __name__ == '__main__':
                 test_label_path=telabels_path,
                 nullset_path=te_path,
                 nullset_labels=null_arr[:, :, jj],
-                learning_rate=0.1,
+                learning_rate=0.02,
                 dense_out=1,
                 hidden=30,
                 dense_in=10,
@@ -537,6 +513,7 @@ if __name__ == '__main__':
             )
             respred.append(AFF.predict())
 
+        print(respred)
         respred = np.asarray(respred)
         dict4['prediction'] = respred
         graph_dict[param_pred] = dict4

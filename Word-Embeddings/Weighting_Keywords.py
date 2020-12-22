@@ -32,6 +32,11 @@ class Weighting_Keyword:
 
         # wIN = 1
 
+        self.phrase = dict()
+
+
+
+
 
         self.__init_dicts()
 
@@ -63,17 +68,35 @@ class Weighting_Keyword:
         return lword
 
     def keyword_search(self):
-
         atom_weights = []
+        firstword = ''
+        phrase_flag = 0
         for para in self.raw_paras:
             tok_para = self.tokenize_paras(para)
             for sen in tok_para:
                 for word in sen:
+
                     rootword = self.__lemmatize_word(word)
+                    if phrase_flag == 1:
+                        ph = self.phrase_check(firstword, rootword)
+                        if ph != None:
+                            atom_weights.append(ph['weight'])
+                            phrase_flag = 0
+                        else:
+                            phrase_flag = 0
                     for key, val in self.keywords.items():
                         tag_words = val['words']
+
                         if rootword in tag_words:
                             atom_weights.append(val['weight'])
+                        elif rootword == val['first'] and phrase_flag == 0:
+                            firstword = val['first']
+                            phrase_flag = 1
+                        elif rootword in self.phrase.keys() and phrase_flag == 0:
+                            firstword = rootword
+                            phrase_flag = 1
+
+
             para_weights = sum(atom_weights)
             if para_weights == 0:
                 para_weights = 1
@@ -90,6 +113,31 @@ class Weighting_Keyword:
 
         return weighted_atoms
 
+
+    def phrase_check(self, firstword, secondword):
+        if secondword == 'variable':
+            return self.keywords['S']
+        elif firstword == 'thermal':
+            if secondword in self.resist:
+                return self.keywords['TR']
+            elif secondword in self.cap:
+                return self.keywords['TC']
+        elif firstword == 'fluid':
+            if secondword in self.resist:
+                return self.keywords['FR']
+            elif secondword in self.cap:
+                return self.keywords['FC']
+            elif secondword in self.induct:
+                return self.keywords['FL']
+        elif firstword == 'angular':
+            if secondword == 'velocity':
+                return self.keywords['OM']
+        else:
+            return None
+
+
+
+
     def __init_dicts(self):
         V = dict(); I = dict(); S = dict(); R = dict()
         C = dict(); L = dict(); D = dict(); A = dict()
@@ -100,36 +148,51 @@ class Weighting_Keyword:
         TC = dict(); TR = dict(); FL = dict()
         # IN = dict()
 
-        V['words'] = ['voltage', 'volt']; V['weight'] = self.wV
-        v['words'] = ['velocity', 'm/s']; v['weight'] = self.wv
-        OM['words'] = ['angular', 'velocity', 'omega', 'rad/s']; OM['weight'] = self.wOM #
-        P['words'] = ['pressure', 'atm', 'bar', 'psi']; P['weight'] = self.wP
-        TE['words'] = ['temperature', 'temp']; TE['weight'] = self.wTE#
-        S['words'] = ['source']; S['weight'] = self.wS
+        lump = ['inertance', 'inductance', 'inductor', 'resistance', 'resistor', 'capacitance', 'capacitor']
+        self.induct = ['inertance', 'inductance', 'inductor']
+        self.resist = ['resistance', 'resistor']
+        self.cap = ['capacitance', 'capacitor']
 
-        f['words'] = ['force']; f['weight'] = self.wf
-        TO['words'] = ['torque', 'tau', 'nm']; TO['weight'] = self.wTO
-        I['words'] = ['current', 'amp']; I['weight'] = self.wI
-        q['words'] = ['heat', 'joule', 'btu', 'watt']; q['weight'] = self.wq
-        Q['words'] = ['cubic', 'volume']; Q['weight'] = self.wQ
+        self.phrase['across'] = ['variable']
+        self.phrase['through'] = ['variable']
+        self.phrase['fluid'] = lump
+        self.phrase['thermal'] = lump
+        self.phrase['electrical'] = lump
+        self.phrase['translational'] = lump
+        self.phrase['rotational'] = lump
+        self.phrase['angular'] = ['velocity']
 
-        A['words'] = ['a-type']; A['weight'] = self.wA
-        C['words'] = ['capacitor', 'farads', 'capacitance']; C['weight'] = self.wC
-        M['words'] = ['mass']; M['weight'] = self.wM
-        J['words'] = ['moment', 'inertia']; J['weight'] = self.wJ
-        FC['words'] = ['n/m', 'lb/m']; FC['weight'] = self.wFC #
-        TC['words'] = ['c/m', 'f/m']; TC['weight'] = self.wTC #
 
-        T['words'] = ['t-type']; T['weight'] = self.wT
-        k['words'] = ['spring']; k['weight'] = self.wk
-        L['words'] = ['inductor', 'inductance']; L['weight'] = self.wL
-        FL['words'] = ['inertance']; FL['weight'] = self.wFL # fluid inductor
+        V['words'] = ['voltage', 'volt']; V['weight'] = self.wV; V['first'] = []
+        v['words'] = ['velocity', 'm/s']; v['weight'] = self.wv; v['first'] = []
+        OM['words'] = ['omega', 'rad/s']; OM['weight'] = self.wOM; OM['first'] = []
+        P['words'] = ['pressure', 'atm', 'bar', 'psi']; P['weight'] = self.wP; P['first'] = []
+        TE['words'] = ['temperature', 'temp']; TE['weight'] = self.wTE; TE['first'] = []
+        S['words'] = ['source', 'across-variable', 'through-variable']; S['weight'] = self.wS; S['first'] = 'across'
 
-        D['words'] = ['d-type']; D['weight'] = self.wD
-        B['words'] = ['damper']; B['weight'] = self.wB
-        R['words'] = ['resistor', 'resistance', 'ohm', 'impedance']; R['weight'] = self.wR
-        FR['words'] = ['drag']; FR['weight'] = self.wFR
-        TR['words'] = ['k/w']; TR['weight'] = self.wTR
+        f['words'] = ['force']; f['weight'] = self.wf; f['first'] = []
+        TO['words'] = ['torque', 'tau', 'nm']; TO['weight'] = self.wTO; TO['first'] = []
+        I['words'] = ['current', 'amp']; I['weight'] = self.wI; I['first'] = []
+        q['words'] = ['heat', 'joule', 'btu', 'watt']; q['weight'] = self.wq; q['first'] = []
+        Q['words'] = ['cubic', 'volume']; Q['weight'] = self.wQ; Q['first'] = []
+
+        A['words'] = ['a-type']; A['weight'] = self.wA; A['first'] = []
+        C['words'] = ['capacitor', 'farads', 'capacitance']; C['weight'] = self.wC; C['first'] = []
+        M['words'] = ['mass']; M['weight'] = self.wM; M['first'] = []
+        J['words'] = ['moment', 'inertia']; J['weight'] = self.wJ; J['first'] = []
+        FC['words'] = ['n/m', 'lb/m']; FC['weight'] = self.wFC; FC['first'] = 'fluid'
+        TC['words'] = ['c/m', 'f/m']; TC['weight'] = self.wTC; TC['first'] = 'thermal'
+
+        T['words'] = ['t-type']; T['weight'] = self.wT; T['first'] = []
+        k['words'] = ['spring']; k['weight'] = self.wk; k['first'] = []
+        L['words'] = ['inductor', 'inductance']; L['weight'] = self.wL; L['first'] = []
+        FL['words'] = ['inertance']; FL['weight'] = self.wFL; FL['first'] = 'fluid'
+
+        D['words'] = ['d-type']; D['weight'] = self.wD; D['first'] = []
+        B['words'] = ['damper']; B['weight'] = self.wB; B['first'] = []
+        R['words'] = ['resistor', 'resistance', 'ohm', 'impedance']; R['weight'] = self.wR; R['first'] = []
+        FR['words'] = ['drag']; FR['weight'] = self.wFR; FR['first'] = 'fluid'
+        TR['words'] = ['k/w']; TR['weight'] = self.wTR; TR['first'] = 'thermal'
 
 
 
@@ -144,27 +207,34 @@ class Weighting_Keyword:
 
 
 
-
-
 if __name__ == '__main__':
     with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\raw_ricoparas.pkl', 'rb') as f2:
         raw_paras = pickle.load(f2)
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\all_atoms.pkl', 'rb') as f4:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\ndelta_rico\all_atoms.pkl', 'rb') as f4:
         atoms = pickle.load(f4)
 
 
 
+    indim = 10
+    new_atoms = np.empty((len(atoms), indim))
+    for ii, ele in enumerate(atoms):
+        if ele == []:
+            nele = np.zeros((1, indim))
+            new_atoms[ii, :] = nele
+        else:
+            new_atoms[ii, :] = np.asarray(ele)
+
 
 
     WK = Weighting_Keyword(raw_paras,
-                           wV=1.1, wI=1.1, wS=1.9, wR=1.1, wC=1.1, wL=1.1, wD=1.9, wA=1.9, wT=1.9,
-                           wB=1.3, wf=1.3, wv=1.3, wk=1.3, wM=1.3, wTO=1.5,
-                           wOM=1.5, wJ=1.5, wP=1.7, wQ=1.7, wFC=1.7, wFR=1.7, wq=1.8, wTE=1.8,
-                           wTC=1.8, wTR=1.8, wFL=1.7
+                           wV=5.1, wI=7.1, wS=10.9, wR=100.1, wC=300.1, wL=50.1, wD=500.9, wA=290.9, wT=65.9,
+                           wB=111.3, wf=3.3, wv=4.3, wk=57.3, wM=290.3, wTO=8.5,
+                           wOM=9.5, wJ=322.5, wP=6.7, wQ=8.7, wFC=344.7, wFR=131.7, wq=11.8, wTE=6.8,
+                           wTC=366.8, wTR=88.8, wFL=37.7
                            )
     WK.keyword_search()
-    weighted_ordered_atoms = WK.apply_weights(atoms)
+    weighted_ordered_atoms = WK.apply_weights(new_atoms)
 
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\weighted_all_atoms1.pkl', 'wb') as f5:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\ndelta_rico\weighted_all_atoms_5_500.pkl', 'wb') as f5:
         pickle.dump(weighted_ordered_atoms, f5)
