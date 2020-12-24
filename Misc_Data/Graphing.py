@@ -64,10 +64,10 @@ def plot_pred_v_actual(prediction, actual, subx, suby, title, linestyles=[], ord
     nplots = subx*suby
     for ii in range(nplots):
         num = np.random.randint(0, len(prediction))
-        x1.append(prediction[num, 1])
-        y1.append(prediction[num, 2])
-        x2.append(actual[num, 1])
-        y2.append(actual[num, 2])
+        x1.append(prediction[num, 0])
+        y1.append(prediction[num, 1])
+        x2.append(actual[num, 0])
+        y2.append(actual[num, 1])
 
 
     pr = np.asarray((x1, y1))
@@ -117,10 +117,46 @@ def plot_one_loss(graph_dict, x, y, title, colors, linestyles = [], dicts_wanted
     plt.show()
 
 
+
+def comparative_bar_plot(prediction, actual, nbars, y, title, dim=1, width=0.35):
+    x1 = []; x2 = []
+
+    ind = np.arange(nbars)
+    for ii in range(nbars):
+        num = np.random.randint(0, len(prediction))
+        x1.append(prediction[num, dim])
+        x2.append(actual[num, dim])
+
+
+    plt.bar(ind, x1, width, label='Prediction')
+    plt.bar(ind+width, x2, width, label='Actual')
+
+    plt.ylabel(y)
+    plt.title(title)
+    plt.legend(loc='best')
+    plt.show()
+
+
+
+def multi_part(trloss, teloss, nuloss):
+    tr = np.concatenate(trloss, axis=1)
+    te = np.concatenate(teloss, axis=1)
+    nu = np.concatenate(nuloss, axis=1)
+
+    assert tr.shape == te.shape == nu.shape
+    epochs = range(tr.size)
+
+    plt.plot(epochs, list(tr), label='Train')
+    plt.plot(epochs, te, label='Test')
+    plt.plot(epochs, nu, label='Null')
+    plt.legend()
+    plt.show()
+
+
 if __name__ == '__main__':
     x = 'Epochs'
     y = 'Loss'
-    title = 'FF ndelta 10dim-rico 3dim-out relu 02'
+    title = 'FF BOWsum 10dim-rico 3dim-out relu w5 02'
     colors = ['r', 'g', 'b']
     linestyles = ['solid', 'dashed', 'dotted']
     layer_order = [10, 5, 0]
@@ -132,15 +168,26 @@ if __name__ == '__main__':
 
     # plot_loss(regress_graph_dict, 'Epochs', 'Loss', 'Plot1')
 
+    # trwant = []; tewant =[]; nuwant = []
+    # trloss = []; teloss = []; nuloss = []
+    # for ii in range(1, 10):
+    #     trdict = graph_dict[f'ff_250ep_train_rico10dims_BOWsum_w_5_3dim_relu_00_pt0{ii}']
+    #     tedict = graph_dict[f'ff_250ep_test_rico10dims_BOWsum_w_5_3dim_relu_00_pt0{ii}']
+    #     nudict = graph_dict[f'ff_250ep_nullset_rico10dims_BOWsum_w_5_3dim_relu_00_pt0{ii}']
+    #
+    #     trloss.append(trdict['loss']); teloss.append(tedict['loss']); nuloss.append(nudict['loss'])
+    #
+    # multi_part(trloss, teloss, nuloss)
+
 
     dicts_wanted = [
-        'ff_25ep_train_rico10dims_ndelta_w_5_500_3dim_relu_02',
-        'ff_25ep_test_rico10dims_ndelta_w_5_500_3dim_relu_02',
-        'ff_25ep_nullset_rico10dims_ndelta_w_5_500_3dim_relu_02'
+        'ff_25ep_train_rico10dims_BOWsum_w_5_3dim_relu_02',
+        'ff_25ep_test_rico10dims_BOWsum_w_5_3dim_relu_02',
+        'ff_25ep_nullset_rico10dims_BOWsum_w_5_3dim_relu_02'
                     ]
     shift = [
-        'ff_25ep_test_rico10dims_ndelta_w_5_500_3dim_relu_02',
-        'ff_25ep_nullset_rico10dims_ndelta_w_5_500_3dim_relu_02'
+        'ff_25ep_test_rico10dims_BOWsum_w_5_3dim_relu_02',
+        'ff_25ep_nullset_rico10dims_BOWsum_w_5_3dim_relu_02'
     ]
     plot_one_loss(graph_dict, x, y, title, colors, dicts_wanted=dicts_wanted, linestyles=linestyles, order=layer_order, shift=shift)
 
@@ -151,25 +198,33 @@ if __name__ == '__main__':
     #
 
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_1_20_output_3Dims\train_labels.pkl', 'rb') as f4:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\train_labels.pkl', 'rb') as f4:
         act = pickle.load(f4)
     #
     #
 
 
-    pred00_dict = graph_dict['ff_25ep_pred_rico10dims_ndelta_w_1_20_3dim_relu_00']
-    pred01_dict = graph_dict['ff_25ep_pred_rico10dims_ndelta_w_1_20_3dim_relu_01']
-    pred02_dict = graph_dict['ff_25ep_pred_rico10dims_ndelta_w_1_20_3dim_relu_02']
+    pred00_dict = graph_dict['ff_250ep_pred_rico10dims_BOWsum_w_5_3dim_relu_00_pt10']
+    # pred01_dict = graph_dict['ff_250ep_pred_rico10dims_BOWsum_w_5_3dim_relu_01']
+    # pred02_dict = graph_dict['ff_250ep_pred_rico10dims_BOWsum_w_5_3dim_relu_02']
 
     pred00 = pred00_dict['prediction']; pred00 = np.reshape(pred00, (pred00.shape[1], 1))
-    pred01 = pred01_dict['prediction']; pred01 = np.reshape(pred01, (pred01.shape[1], 1))
-    pred02 = pred02_dict['prediction']; pred02 = np.reshape(pred02, (pred02.shape[1], 1))
-
-    pred = np.concatenate((pred00, pred01, pred02), axis=1)
+    # pred01 = pred01_dict['prediction']; pred01 = np.reshape(pred01, (pred01.shape[1], 1))
+    # pred02 = pred02_dict['prediction']; pred02 = np.reshape(pred02, (pred02.shape[1], 1))
     #
-    title = 'Prediction vs. Actual FF ndelta 10dim-rico 3dim-out 01-02'
-    subx = 3
-    suby = 3
-    line = ['solid', 'dashed']
-    ord = [5, 0]
-    plot_pred_v_actual(pred, act, subx, suby, title, linestyles=line, order=ord)
+    # pred = np.concatenate((pred00, pred01, pred02), axis=1)
+    #
+
+
+    title = 'Prediction vs. Actual FF ndelta 10dim-rico 3dim-out 02'
+    # subx = 3
+    # suby = 3
+    # line = ['solid', 'dashed']
+    # ord = [5, 0]
+    # plot_pred_v_actual(pred, act, subx, suby, title, linestyles=line, order=ord)
+
+
+    nbars = 5
+    ylab = 'Dim00 Magnitude'
+
+    comparative_bar_plot(pred00, act, nbars, ylab, title, dim=0)

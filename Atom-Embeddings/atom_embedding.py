@@ -4,6 +4,7 @@ import pickle
 import tensorflow as tf
 from sklearn.decomposition import TruncatedSVD
 
+from Weighting_Keywords import Weighting_Keyword
 
 
 class Atom_Embedder:
@@ -50,7 +51,7 @@ class Atom_Embedder:
 
         return res
 
-    def sum_of_ndelta(self, atom, n):
+    def sum_of_ndelta(self, atom, n, weights=[]):
         """
         n = 1: difference between each vector than sum
         n = 2: difference between each vector then a difference between resultant then sum.
@@ -59,7 +60,8 @@ class Atom_Embedder:
         :param n: Number of deltas
         :return:
         """
-
+        if weights == []: # not quite sure how to do these weights with the ndelta
+            weights = np.ones(len(atom))
         diff1 = []
         diff2 = self.__init_diffs(atom)
         L = len(diff2)
@@ -76,7 +78,7 @@ class Atom_Embedder:
         return res
 
 
-    def sum_atoms(self, atom):
+    def sum_atoms(self, atom, weights=[]):
         """
         sums one atom per call
         :param atom: One atom per call
@@ -84,14 +86,16 @@ class Atom_Embedder:
         (1, 2, 3) + (4, 5, 6) = (5, 7, 9)
         """
         sums = []
-        for ii in range(0, len(atom) - 1): # 0  or -1 ???
-            sums.append(self.encoded_vecs[atom[ii]])
+        if weights == []:
+            weights = np.ones(len(atom))
+        for ii in range(0, len(atom)): # 0  or -1 ???
+            sums.append(self.encoded_vecs[atom[ii]] * weights[ii])
 
         res = [sum(jj) for jj in zip(*sums)]
 
         return res
 
-    def avg_atoms(self, atom):
+    def avg_atoms(self, atom, weights=[]):
         """
         averages one atom per call
         :param atom:
@@ -99,8 +103,10 @@ class Atom_Embedder:
         (1, 2, 3), (4, 5, 6) = (2.5, 3.5, 4.5)
         """
         atom_vectors = []
+        if weights == []:
+            weights = np.ones(len(atom))
         for ii in range(0, len(atom)):
-            atom_vectors.append(self.encoded_vecs[atom[ii]])
+            atom_vectors.append(self.encoded_vecs[atom[ii]]*weights[ii])
 
         atom_arr = np.asarray(atom_vectors)
 
@@ -139,7 +145,7 @@ class Atom_Embedder:
 
         return cc0
 
-    def SIF_embedding(self, atom, embed_dim, npc, num_iter):
+    def SIF_embedding(self, atom, embed_dim, npc, num_iter, weights=None):
         emb = self.weighted_avg(atom, embed_dim)
 
         emb = self.remove_pc(emb, npc, num_iter)
@@ -155,6 +161,9 @@ class Atom_Embedder:
 
 if __name__ == '__main__':
     atom_vecs = []
+    weighting_factor = 50
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\raw_ricoparas.pkl', 'rb') as f0:
+        raw_paras = pickle.load(f0)
 
     with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ranked_vocab.pkl', 'rb') as voc_file:
         vocab = pickle.load(voc_file)
@@ -165,11 +174,15 @@ if __name__ == '__main__':
     model = tf.keras.models.load_model(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_10dims')
 
     AE = Atom_Embedder(model.layers[0].get_weights()[0], vocab)
-
+    WK = Weighting_Keyword(vocab, weighting_factor)
     for para in encoded:
         # atom_vecs.append(AE.sum_of_difference(para))
+
+
         if para:
-            atom_vecs.append(AE.sum_atoms(para))
+            WK.keywords_in_vocab()
+            weights = WK.keyword_search(para)
+            atom_vecs.append(AE.sum_atoms(para, weights))
         else:
             # There is one empty paragraph. Error, grabbed latex code and then cleaned it.
             para = [0]
@@ -177,7 +190,7 @@ if __name__ == '__main__':
 
     # saving
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\all_atoms.pkl', 'wb') as file:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\all_atoms_weighted_50.pkl', 'wb') as file:
         pickle.dump(atom_vecs, file)
 
 
