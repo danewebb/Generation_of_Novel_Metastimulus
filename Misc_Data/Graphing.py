@@ -156,7 +156,7 @@ def multi_part(trloss, teloss, nuloss):
 if __name__ == '__main__':
     x = 'Epochs'
     y = 'Loss'
-    title = 'FF BOWsum 10dim-rico 3dim-out relu w5 02'
+    title = 'FF ndelta 10dim-rico 3dim-out tanh w500 02'
     colors = ['r', 'g', 'b']
     linestyles = ['solid', 'dashed', 'dotted']
     layer_order = [10, 5, 0]
@@ -181,13 +181,13 @@ if __name__ == '__main__':
 
 
     dicts_wanted = [
-        'ff_25ep_train_rico10dims_BOWsum_w_5_3dim_relu_02',
-        'ff_25ep_test_rico10dims_BOWsum_w_5_3dim_relu_02',
-        'ff_25ep_nullset_rico10dims_BOWsum_w_5_3dim_relu_02'
+        'ff_500ep_train_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_00',
+        'ff_500ep_test_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_02',
+        # 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
                     ]
     shift = [
-        'ff_25ep_test_rico10dims_BOWsum_w_5_3dim_relu_02',
-        'ff_25ep_nullset_rico10dims_BOWsum_w_5_3dim_relu_02'
+        'ff_500ep_test_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_02',
+        # 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
     ]
     plot_one_loss(graph_dict, x, y, title, colors, dicts_wanted=dicts_wanted, linestyles=linestyles, order=layer_order, shift=shift)
 
@@ -198,25 +198,25 @@ if __name__ == '__main__':
     #
 
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\train_labels.pkl', 'rb') as f4:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_50_output_3Dims\train_labels.pkl', 'rb') as f4:
         act = pickle.load(f4)
     #
     #
 
 
-    pred00_dict = graph_dict['ff_250ep_pred_rico10dims_BOWsum_w_5_3dim_relu_00_pt10']
-    # pred01_dict = graph_dict['ff_250ep_pred_rico10dims_BOWsum_w_5_3dim_relu_01']
-    # pred02_dict = graph_dict['ff_250ep_pred_rico10dims_BOWsum_w_5_3dim_relu_02']
-
+    pred00_dict = graph_dict['ff_500ep_pred_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_00']
+    # pred01_dict = graph_dict['ff_500ep_pred_rico10dims_ndelta_w_50_3dim_tanh_01']
+    # pred02_dict = graph_dict['ff_500ep_pred_rico10dims_ndelta_w_50_3dim_tanh_02']
+    #
     pred00 = pred00_dict['prediction']; pred00 = np.reshape(pred00, (pred00.shape[1], 1))
     # pred01 = pred01_dict['prediction']; pred01 = np.reshape(pred01, (pred01.shape[1], 1))
     # pred02 = pred02_dict['prediction']; pred02 = np.reshape(pred02, (pred02.shape[1], 1))
     #
     # pred = np.concatenate((pred00, pred01, pred02), axis=1)
-    #
 
 
-    title = 'Prediction vs. Actual FF ndelta 10dim-rico 3dim-out 02'
+
+    title = 'Prediction vs. Actual FF ndelta 10dim-rico w500 3dim-out 02'
     # subx = 3
     # suby = 3
     # line = ['solid', 'dashed']
@@ -225,6 +225,6 @@ if __name__ == '__main__':
 
 
     nbars = 5
-    ylab = 'Dim00 Magnitude'
+    ylab = 'Location'
 
     comparative_bar_plot(pred00, act, nbars, ylab, title, dim=0)

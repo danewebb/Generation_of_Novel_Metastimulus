@@ -82,7 +82,7 @@ def norm_all(train=None, test=None, null=None):
 # x3 = x2
 # y3 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_1_20_output_3Dims\nulltest_3dims.pkl'
 #
-x1 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\all_atoms_weighted.pkl'
+x1 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\all_atoms_weighted_100alpha.pkl'
 y1 = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_3Dims.pkl'
 #
 #
@@ -160,14 +160,14 @@ train, train_labels, test, test_labels, _, _ = split(xx, yy, 0.8, 0.2)
 
 
 
-with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\train.pkl', 'wb') as f5:
+with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train.pkl', 'wb') as f5:
     pickle.dump(train, f5)
-with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\train_labels.pkl', 'wb') as f6:
+with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_100_output_3Dims\train_labels.pkl', 'wb') as f6:
     pickle.dump(train_labels, f6)
 
-with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\test.pkl', 'wb') as f7:
+with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_100_output_3Dims\test.pkl', 'wb') as f7:
     pickle.dump(test, f7)
-with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\test_labels.pkl', 'wb') as f8:
+with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_100_output_3Dims\test_labels.pkl', 'wb') as f8:
     pickle.dump(test_labels, f8)
 
 

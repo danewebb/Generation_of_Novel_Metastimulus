@@ -229,11 +229,11 @@ class Weighting_Keyword:
 if __name__ == '__main__':
     with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\raw_ricoparas.pkl', 'rb') as f2:
         raw_paras = pickle.load(f2)
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\ndelta_rico\all_atoms.pkl', 'rb') as f4:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\all_atoms.pkl', 'rb') as f4:
         atoms = pickle.load(f4)
 
 
-    weight = 5
+    weight = 50
     indim = 10
     new_atoms = np.empty((len(atoms), indim))
     for ii, ele in enumerate(atoms):
@@ -251,5 +251,5 @@ if __name__ == '__main__':
     weighted_ordered_atoms = WK.apply_weights(new_atoms)
 
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\ndelta_rico\weighted_all_atoms_5_500.pkl', 'wb') as f5:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\weighted_all_atoms_50.pkl', 'wb') as f5:
         pickle.dump(weighted_ordered_atoms, f5)

@@ -161,28 +161,29 @@ class Atom_Embedder:
 
 if __name__ == '__main__':
     atom_vecs = []
-    weighting_factor = 50
+    weighting_factor = 100
+    ndel = 8
     with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\raw_ricoparas.pkl', 'rb') as f0:
         raw_paras = pickle.load(f0)
 
     with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ranked_vocab.pkl', 'rb') as voc_file:
         vocab = pickle.load(voc_file)
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data.pkl', 'rb') as vec_file:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data_01.pkl', 'rb') as vec_file:
         encoded = pickle.load(vec_file)
 
-    model = tf.keras.models.load_model(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_10dims')
+    model = tf.keras.models.load_model(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_30dims')
 
     AE = Atom_Embedder(model.layers[0].get_weights()[0], vocab)
     WK = Weighting_Keyword(vocab, weighting_factor)
+    WK.keywords_in_vocab()
     for para in encoded:
         # atom_vecs.append(AE.sum_of_difference(para))
 
 
         if para:
-            WK.keywords_in_vocab()
             weights = WK.keyword_search(para)
-            atom_vecs.append(AE.sum_atoms(para, weights))
+            atom_vecs.append(AE.sum_atoms(para, weights=weights))
         else:
             # There is one empty paragraph. Error, grabbed latex code and then cleaned it.
             para = [0]
@@ -190,7 +191,7 @@ if __name__ == '__main__':
 
     # saving
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\all_atoms_weighted_50.pkl', 'wb') as file:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\all_atoms_weighted_100alpha.pkl', 'wb') as file:
         pickle.dump(atom_vecs, file)
 
 

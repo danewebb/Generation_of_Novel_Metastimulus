@@ -2,6 +2,8 @@ import numpy as np
 import pickle
 import os
 import re
+import nltk
+from nltk.corpus import stopwords
 import json
 import tensorflow as tf
 # import tensorflow_datasets as tfds
@@ -133,8 +135,11 @@ class Tex_Processing():
                     # if letter is a space, everything previous makes up a word
                     if let == ' ':
                         word = ''.join(word_store)
-                        clean_word = self.word_cleaner(word)
+                        cleaner_word = self.word_cleaner(word)
                         word_store = []
+
+                        nostop = self.remove_stop(cleaner_word)
+                        clean_word = self.lemmatize(nostop)
 
                         for idx, w in enumerate(vocab):
                             if w == clean_word:
@@ -188,6 +193,20 @@ class Tex_Processing():
                 pickle.dump(self.data, f1)
 
 
+    def lemmatize(self, word):
+        from nltk.stem import WordNetLemmatizer
+        lemmatizer = WordNetLemmatizer()
+
+        return lemmatizer.lemmatize(word)
+
+
+    def remove_stop(self, word):
+        stop_words = set(stopwords.words('english'))
+        if word in stop_words:
+            return ''
+        else:
+            return word
+
 
     def main(self, encoded_data_path, threshold=1):
 
@@ -240,4 +259,4 @@ class Tex_Processing():
 if __name__ == '__main__':
     PCS = Tex_Processing(data_dir=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\raw_ricoparas.pkl',
                          vocab_dir=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ranked_vocab.pkl')
-    PCS.main(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data.pkl')
+    PCS.main(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data_01.pkl')

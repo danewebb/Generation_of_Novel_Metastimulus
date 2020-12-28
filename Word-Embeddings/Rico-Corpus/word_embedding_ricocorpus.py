@@ -81,7 +81,7 @@ class word_embedding_ricocorpus():
         self.model = keras.Sequential([
             layers.Embedding(self.vocab_size, self.embedding_dim),
             layers.GlobalAveragePooling1D(),
-            layers.Dense(self.dense1_size, activation='relu'),
+            layers.Dense(self.dense1_size, activation='tanh'),
             layers.Dense(self.dense2_size)
         ])
 
@@ -110,30 +110,34 @@ class word_embedding_ricocorpus():
 
 
 
-
+    def retrieve_we(self, vecs_save, meta_save):
+        vecs = []
+        meta = []
         # ### Retrieve Word Embeddings
-        # e = model.layers[0]
-        # weights = e.get_weights()[0]
-        # print(weights.shape)
-        # #
-        # import io
-        # #
-        # # # need to decode to get words rather than numbers
-        # # # encoder = info.features['text'].encoder
-        # #
-        # out_v = io.open(r'ricocorpus_wordembedding\vecs.tsv', 'w', encoding='utf-8')
-        # out_m = io.open(r'ricocorpus_wordembedding\meta.tsv', 'w', encoding='utf-8')
-        # #
-        # for num, word in enumerate(vocab):
-        #   vec = weights[num]
-        #   out_m.write(word + "\n")
-        #   out_v.write('\t'.join([str(x) for x in vec]) + "\n")
+        e = self.model.layers[0]
+        weights = e.get_weights()[0]
+        print(weights.shape)
         #
+        import io
         #
+        # # need to decode to get words rather than numbers
+        # # encoder = info.features['text'].encoder
         #
+        out_v = io.open(vecs_save, 'w', encoding='utf-8')
+        out_m = io.open(meta_save, 'w', encoding='utf-8')
         #
-        # out_v.close()
-        # out_m.close()
+        for num, word in enumerate(self.vocab):
+            vec = weights[num]
+            if num != 0:
+                out_m.write(word + "\n")
+                out_v.write('\t'.join([str(x) for x in vec]) + "\n")
+
+
+
+
+
+        out_v.close()
+        out_m.close()
 
 
 
@@ -154,7 +158,7 @@ if __name__ == '__main__':
     # with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\train_len.pkl', 'rb') as file1:
     #     train_lens = pickle.load(file1)
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data.pkl', 'rb') as file:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data_01.pkl', 'rb') as file:
         data = pickle.load(file)
 
 
@@ -166,10 +170,12 @@ if __name__ == '__main__':
 
 
 
-    wre = word_embedding_ricocorpus(data, vocab, 50, shuffling=True,
-                                    save_location=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_50dims',
+    wre = word_embedding_ricocorpus(data, vocab, 30, shuffling=True,
+                                    save_location=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_30dims',
                                     set_epochs=10000
                                     )
 
     wre.list_to_numpy()
     wre.train_embedding()
+    wre.retrieve_we(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ricocorpus_1000ep_30dims\vecs.tsv',
+                    r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ricocorpus_1000ep_30dims\meta.tsv')

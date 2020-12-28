@@ -9,6 +9,7 @@ from keras.utils import plot_model
 from matplotlib import pyplot as plt
 from statistics import mean
 
+
 class Atom_FFNN:
     def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='',
                  model_path = '', save_model_path='', batch_size=10, epochs=100, nullset_path='', nullset_labels_path='', nullset_labels=None,
@@ -158,10 +159,13 @@ class Atom_FFNN:
             # layers.GlobalAveragePooling1D(),
 
             # layers.Dense(self.dense2, activation='relu', input_shape=(2,)),
-            layers.Dense(self.dense2, input_shape=(self.dense2,)),
-            layers.Dense(self.hidden, activation='relu'),
-            layers.Dropout(self.drop_per),
-            layers.Dense(self.dense1, activation='sigmoid')
+            layers.Dense(self.dense2, input_shape=(self.dense2,), activation='tanh'),
+            layers.Dense(80, activation='sigmoid'),
+            # layers.Dropout(self.drop_per),
+            layers.Dense(130, activation='softmax'),
+            # layers.Dropout(self.drop_per),
+            layers.Dense(78, activation='tanh'),
+            layers.Dense(self.dense1, activation='linear')
         ])
 
         sgd = keras.optimizers.SGD(learning_rate=self.learn_rate)
@@ -355,14 +359,14 @@ class Atom_FFNN:
 
 if __name__ == '__main__':
     with tf.device('/cpu:0'):
-        set_batch_size = 10
+        set_batch_size = 5
         set_epochs = 1
         learn_rate = 0.01
         curdim = 0
         model_paths = [
-            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\model250_3dims_relu_00',
-            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\model250_3dims_relu__01',
-            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\model250_3dims_relu__02',
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\model500_3dims_tanh-tanh-tanh_00',
+            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\model500_3dims_tanh-tanh-tanh_01',
+            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\model500_3dims_tanh-tanh-tanh_02',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_03',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_04',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_05',
@@ -373,11 +377,11 @@ if __name__ == '__main__':
         ]
 
 
-        tr_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\train.pkl'
-        trlabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\train_labels.pkl'
+        tr_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\train.pkl'
+        trlabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\train_labels.pkl'
 
-        te_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\test.pkl'
-        telabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\test_labels.pkl'
+        te_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\test.pkl'
+        telabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\test_labels.pkl'
 
 
 
@@ -390,7 +394,7 @@ if __name__ == '__main__':
                 epochs=set_epochs,
                 regression=True,
                 # classification=True,
-                model_path=model_paths[dim],
+                # model_path=model_paths[dim],
                 save_model_path=model_paths[dim],
                 # current_dim=dim,
                 current_dim=curdim,
@@ -400,7 +404,7 @@ if __name__ == '__main__':
                 # nullset_labels_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_rico\nulltest_set.pkl',
                 learning_rate=learn_rate,
                 dense_out=1,
-                hidden=30,
+                hidden=300,
                 dense_in=10,
                 drop_per=.1,
                 normalize=False
@@ -408,13 +412,13 @@ if __name__ == '__main__':
 
             AFF.save_model()
 
-        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_5_output_3Dims\nulltest_3dims.pkl', 'rb') as f12:
-            null_arr = pickle.load(f12)
+        # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_500_output_3Dims\nulltest_3dims.pkl', 'rb') as f12:
+        #     null_arr = pickle.load(f12)
 
-        epochs = 25
+        epochs = 1000
         restr = np.empty((output_dimension, epochs))
         reste = np.empty((output_dimension, epochs))
-        null = np.empty((output_dimension, epochs, null_arr.shape[2]))
+        # null = np.empty((output_dimension, epochs, null_arr.shape[2]))
         respred = []
         null_holder = []
         dict1 = dict()
@@ -430,47 +434,48 @@ if __name__ == '__main__':
                 restr[dim, ii] = trloss[0]
 
                 AFF.save_model()
+                keras.backend.clear_session()
                 reste[dim, ii], _ = AFF.test()
 
-                num_nulls = null_arr.shape[2]
-                for jj in range(num_nulls):
-                    AFF = Atom_FFNN(
-                        data_path=tr_path,
-                        # local atom vector path
-                        train_label_path=trlabels_path,
-                        batch_size=set_batch_size,
-                        epochs=set_epochs,
-                        regression=True,
-                        # classification=True,
-                        model_path=model_paths[dim],
-                        save_model_path=model_paths[dim],
-                        # current_dim=dim,
-                        current_dim=curdim,
-                        test_path=te_path,
-                        test_label_path=telabels_path,
-                        nullset_path=te_path,
-                        nullset_labels=null_arr[:, :, jj],
-                        learning_rate=learn_rate,
-                        dense_out=1,
-                        hidden=30,
-                        dense_in=10,
-                        drop_per=.1,
-                        normalize=False
-                    )
-                    null[dim, ii, jj], _ = AFF.test_nullset()
-
-
+        #         num_nulls = null_arr.shape[2]
+        #         for jj in range(num_nulls):
+        #             AFF = Atom_FFNN(
+        #                 data_path=tr_path,
+        #                 # local atom vector path
+        #                 train_label_path=trlabels_path,
+        #                 batch_size=set_batch_size,
+        #                 epochs=set_epochs,
+        #                 regression=True,
+        #                 # classification=True,
+        #                 model_path=model_paths[dim],
+        #                 save_model_path=model_paths[dim],
+        #                 # current_dim=dim,
+        #                 current_dim=curdim,
+        #                 test_path=te_path,
+        #                 test_label_path=telabels_path,
+        #                 nullset_path=te_path,
+        #                 nullset_labels=null_arr[:, :, jj],
+        #                 learning_rate=learn_rate,
+        #                 dense_out=1,
+        #                 hidden=250,
+        #                 dense_in=10,
+        #                 drop_per=.1,
+        #                 normalize=False
+        #             )
+        #             null[dim, ii, jj], _ = AFF.test_nullset()
+        #
+        #
         with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\results_3dims.pkl', 'rb') as f10:
             graph_dict = pickle.load(f10)
-        # graph_dict = dict()
+        # # graph_dict = dict()
+        #
+        # null_avg = np.average(null, axis=2)
 
-        null_avg = np.average(null, axis=2)
 
-
-        param_tr = 'ff_250ep_train_rico10dims_BOWsum_w_5_3dim_relu_00_pt10'
-        param_te = 'ff_250ep_test_rico10dims_BOWsum_w_5_3dim_relu_00_pt10'
-        param_null = 'ff_250ep_nullset_rico10dims_BOWsum_w_5_3dim_relu_00_pt10' # 09 == 00
-        param_pred = 'ff_250ep_pred_rico10dims_BOWsum_w_5_3dim_relu_00_pt10'
+        param_tr = 'ff_500ep_train_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_00'
+        param_te = 'ff_500ep_test_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_00'
+        # param_null = 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
+        param_pred = 'ff_500ep_pred_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_00'
 
 
         dict1['loss'] = restr
@@ -481,9 +486,9 @@ if __name__ == '__main__':
         dict2['epochs'] = epochs
         graph_dict[param_te] = dict2
 
-        dict3['loss'] = null_avg
-        dict3['epochs'] = epochs
-        graph_dict[param_null] = dict3
+        # dict3['loss'] = null_avg
+        # dict3['epochs'] = epochs
+        # graph_dict[param_null] = dict3
 
 
 
@@ -503,7 +508,7 @@ if __name__ == '__main__':
                 test_path=te_path,
                 test_label_path=telabels_path,
                 nullset_path=te_path,
-                nullset_labels=null_arr[:, :, jj],
+                # nullset_labels=null_arr[:, :, jj],
                 learning_rate=learn_rate,
                 dense_out=1,
                 hidden=30,
