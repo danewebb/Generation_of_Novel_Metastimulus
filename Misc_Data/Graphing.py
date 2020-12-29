@@ -156,14 +156,14 @@ def multi_part(trloss, teloss, nuloss):
 if __name__ == '__main__':
     x = 'Epochs'
     y = 'Loss'
-    title = 'FF ndelta 10dim-rico 3dim-out tanh w500 02'
+    title = 'FF BOWsum 30dim-rico 3dim-out 260tanh-26tanh w100 02'
     colors = ['r', 'g', 'b']
     linestyles = ['solid', 'dashed', 'dotted']
     layer_order = [10, 5, 0]
     # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Metastimuli-Learn\Atom-FFNN\graphing_data.pkl', 'rb') as f1:
     #     prob_graph_dict = pickle.load(f1)
     #
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\results_3dims.pkl', 'rb') as f2:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl', 'rb') as f2:
         graph_dict = pickle.load(f2)
 
     # plot_loss(regress_graph_dict, 'Epochs', 'Loss', 'Plot1')
@@ -181,12 +181,12 @@ if __name__ == '__main__':
 
 
     dicts_wanted = [
-        'ff_500ep_train_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_00',
-        'ff_500ep_test_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_02',
+        'ff_500ep_train_rico_BOWsum_w_100_3dim_260tanh-26tanh_02',
+        'ff_500ep_test_rico_BOWsum_w_100_3dim_260tanh-13tanh_02',
         # 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
                     ]
     shift = [
-        'ff_500ep_test_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_02',
+        'ff_500ep_test_rico_BOWsum_w_100_3dim_260tanh-13tanh_02',
         # 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
     ]
     plot_one_loss(graph_dict, x, y, title, colors, dicts_wanted=dicts_wanted, linestyles=linestyles, order=layer_order, shift=shift)
@@ -198,25 +198,25 @@ if __name__ == '__main__':
     #
 
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_50_output_3Dims\train_labels.pkl', 'rb') as f4:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train_labels.pkl', 'rb') as f4:
         act = pickle.load(f4)
     #
     #
 
 
-    pred00_dict = graph_dict['ff_500ep_pred_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_00']
-    # pred01_dict = graph_dict['ff_500ep_pred_rico10dims_ndelta_w_50_3dim_tanh_01']
-    # pred02_dict = graph_dict['ff_500ep_pred_rico10dims_ndelta_w_50_3dim_tanh_02']
+    pred00_dict = graph_dict['ff_500ep_pred_rico_BOWsum_w_100_3dim_260tanh-13tanh_00']
+    pred01_dict = graph_dict['ff_500ep_pred_rico_BOWsum_w_100_3dim_260tanh-13tanh_01']
+    pred02_dict = graph_dict['ff_500ep_pred_rico_BOWsum_w_100_3dim_260tanh-13tanh_02']
     #
     pred00 = pred00_dict['prediction']; pred00 = np.reshape(pred00, (pred00.shape[1], 1))
-    # pred01 = pred01_dict['prediction']; pred01 = np.reshape(pred01, (pred01.shape[1], 1))
-    # pred02 = pred02_dict['prediction']; pred02 = np.reshape(pred02, (pred02.shape[1], 1))
+    pred01 = pred01_dict['prediction']; pred01 = np.reshape(pred01, (pred01.shape[1], 1))
+    pred02 = pred02_dict['prediction']; pred02 = np.reshape(pred02, (pred02.shape[1], 1))
     #
-    # pred = np.concatenate((pred00, pred01, pred02), axis=1)
+    pred = np.concatenate((pred00, pred01, pred02), axis=1)
 
 
 
-    title = 'Prediction vs. Actual FF ndelta 10dim-rico w500 3dim-out 02'
+    title = 'Prediction vs. Actual\n FF BOWsum 30dim-rico w100 3dim-out 260tanh-26tanh 02'
     # subx = 3
     # suby = 3
     # line = ['solid', 'dashed']
@@ -224,7 +224,7 @@ if __name__ == '__main__':
     # plot_pred_v_actual(pred, act, subx, suby, title, linestyles=line, order=ord)
 
 
-    nbars = 5
+    nbars = 30
     ylab = 'Location'
 
-    comparative_bar_plot(pred00, act, nbars, ylab, title, dim=0)
+    comparative_bar_plot(pred, act, nbars, ylab, title, dim=2)

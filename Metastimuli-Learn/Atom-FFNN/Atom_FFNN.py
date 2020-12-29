@@ -159,12 +159,12 @@ class Atom_FFNN:
             # layers.GlobalAveragePooling1D(),
 
             # layers.Dense(self.dense2, activation='relu', input_shape=(2,)),
-            layers.Dense(self.dense2, input_shape=(self.dense2,), activation='tanh'),
-            layers.Dense(80, activation='sigmoid'),
+            layers.Dense(self.dense2, input_shape=(self.dense2,)),
+            # layers.Dense(80, activation='tanh'),
             # layers.Dropout(self.drop_per),
-            layers.Dense(130, activation='softmax'),
+            layers.Dense(260, activation='tanh'),
             # layers.Dropout(self.drop_per),
-            layers.Dense(78, activation='tanh'),
+            layers.Dense(13, activation='tanh'),
             layers.Dense(self.dense1, activation='linear')
         ])
 
@@ -361,12 +361,12 @@ if __name__ == '__main__':
     with tf.device('/cpu:0'):
         set_batch_size = 5
         set_epochs = 1
-        learn_rate = 0.01
-        curdim = 0
+        learn_rate = 0.005
+        curdim = 2
         model_paths = [
-            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\model500_3dims_tanh-tanh-tanh_00',
-            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\model500_3dims_tanh-tanh-tanh_01',
-            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\model500_3dims_tanh-tanh-tanh_02',
+            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh-26tanh_00',
+            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh-26tanh_01',
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh-26tanh_02',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_03',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_04',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_05',
@@ -377,11 +377,11 @@ if __name__ == '__main__':
         ]
 
 
-        tr_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\train.pkl'
-        trlabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\train_labels.pkl'
+        tr_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train.pkl'
+        trlabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train_labels.pkl'
 
-        te_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\test.pkl'
-        telabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_50_output_3Dims\test_labels.pkl'
+        te_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\test.pkl'
+        telabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\test_labels.pkl'
 
 
 
@@ -405,7 +405,7 @@ if __name__ == '__main__':
                 learning_rate=learn_rate,
                 dense_out=1,
                 hidden=300,
-                dense_in=10,
+                dense_in=30,
                 drop_per=.1,
                 normalize=False
             )
@@ -415,7 +415,7 @@ if __name__ == '__main__':
         # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\ndelta_rico\W_500_output_3Dims\nulltest_3dims.pkl', 'rb') as f12:
         #     null_arr = pickle.load(f12)
 
-        epochs = 1000
+        epochs = 500
         restr = np.empty((output_dimension, epochs))
         reste = np.empty((output_dimension, epochs))
         # null = np.empty((output_dimension, epochs, null_arr.shape[2]))
@@ -465,17 +465,17 @@ if __name__ == '__main__':
         #             null[dim, ii, jj], _ = AFF.test_nullset()
         #
         #
-        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\results_3dims.pkl', 'rb') as f10:
+        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl', 'rb') as f10:
             graph_dict = pickle.load(f10)
-        # # graph_dict = dict()
+        # graph_dict = dict()
         #
         # null_avg = np.average(null, axis=2)
 
 
-        param_tr = 'ff_500ep_train_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_00'
-        param_te = 'ff_500ep_test_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_00'
+        param_tr = 'ff_500ep_train_rico_BOWsum_w_100_3dim_260tanh-26tanh_02'
+        param_te = 'ff_500ep_test_rico_BOWsum_w_100_3dim_260tanh-26tanh_02'
         # param_null = 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
-        param_pred = 'ff_500ep_pred_rico10dims_BOWsum_w_50_3dim_tanh-tanh-tanh_00'
+        param_pred = 'ff_500ep_pred_rico_BOWsum_w_100_3dim_260tanh-26tanh_02'
 
 
         dict1['loss'] = restr
@@ -509,12 +509,12 @@ if __name__ == '__main__':
                 test_label_path=telabels_path,
                 nullset_path=te_path,
                 # nullset_labels=null_arr[:, :, jj],
-                learning_rate=learn_rate,
-                dense_out=1,
-                hidden=30,
-                dense_in=10,
-                drop_per=.1,
-                normalize=False
+                # learning_rate=learn_rate,
+                # dense_out=1,
+                # hidden=30,
+                # dense_in=10,
+                # drop_per=.1,
+                # normalize=False
             )
             respred.append(AFF.predict())
 
@@ -524,7 +524,7 @@ if __name__ == '__main__':
         graph_dict[param_pred] = dict4
 
         with open(
-                r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\results_3dims.pkl',
+                r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl',
                 'wb') as f11:
             pickle.dump(graph_dict, f11)
 

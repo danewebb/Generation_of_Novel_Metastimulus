@@ -20,20 +20,15 @@ def data_to_numpy(lst, dims):
     return arr
 
 
-def split(x, y, trper, teper, valper=0):
-    assert trper + teper + valper == 1.0
-    val = []
+def split(x, y, trper, teper):
+    assert trper + teper == 1.0
     test = []
     train = []
-    val_labels = []
     test_labels = []
     train_labels = []
     for ii in range (len(x)):
         ran = np.random.random()
-        if ran < valper:
-            val.append(x[ii, :])
-            val_labels.append(y[ii, :])
-        elif ran > valper and ran < teper + valper:
+        if ran < teper:
             test.append(x[ii, :])
             test_labels.append(y[ii, :])
         else:
@@ -44,10 +39,9 @@ def split(x, y, trper, teper, valper=0):
     train_labels = np.asarray(train_labels)
     test = np.asarray(test)
     test_labels = np.asarray(test_labels)
-    val = np.asarray(val)
-    val_labels = np.asarray(val_labels)
 
-    return train, train_labels, test, test_labels, val, val_labels
+
+    return train, train_labels, test, test_labels
 
 def norm_all(train=None, test=None, null=None):
     from sklearn import preprocessing
@@ -137,20 +131,26 @@ y = ytr
 # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_sciart\fulltest_labels.pkl', 'wb') as f02:
 #     pickle.dump(y, f02)
 
-xx = x
-yy = y
+xx = np.ones(x.shape)
+yy = np.ones(y.shape)
+
+oldx = np.copy(x)
+oldy = np.copy(y)
 
 for ii in range(np.random.randint(3, 13)):
     for row in range(len(x)):
         r = np.random.randint(0, len(x))
-        xx[row, :] = x[r, :]
-        xx[r, :] = x[row, :]
+        xx[row, :] = oldx[r, :]
+        xx[r, :] = oldx[row, :]
 
-        yy[r, :] = y[row, :]
-        yy[row, :] = y[r, :]
+        yy[r, :] = oldy[row, :]
+        yy[row, :] = oldy[r, :]
+    oldx = np.copy(xx)
+    oldy = np.copy(yy)
 
 
-train, train_labels, test, test_labels, _, _ = split(xx, yy, 0.8, 0.2)
+
+train, train_labels, test, test_labels = split(xx, yy, 0.8, 0.2)
 
 
 # train, test = norm_all(train=xtr, test=xte)
@@ -162,12 +162,12 @@ train, train_labels, test, test_labels, _, _ = split(xx, yy, 0.8, 0.2)
 
 with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train.pkl', 'wb') as f5:
     pickle.dump(train, f5)
-with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_100_output_3Dims\train_labels.pkl', 'wb') as f6:
+with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train_labels.pkl', 'wb') as f6:
     pickle.dump(train_labels, f6)
 
-with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_100_output_3Dims\test.pkl', 'wb') as f7:
+with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\test.pkl', 'wb') as f7:
     pickle.dump(test, f7)
-with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWsum_rico\W_100_output_3Dims\test_labels.pkl', 'wb') as f8:
+with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\test_labels.pkl', 'wb') as f8:
     pickle.dump(test_labels, f8)
 
 

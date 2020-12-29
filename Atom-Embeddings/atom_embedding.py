@@ -159,6 +159,7 @@ class Atom_Embedder:
     # todo: PVDM atom embedding
 
 
+
 if __name__ == '__main__':
     atom_vecs = []
     weighting_factor = 100
