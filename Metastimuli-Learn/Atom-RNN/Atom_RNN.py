@@ -11,8 +11,9 @@ from matplotlib import pyplot as plt
 class Atom_RNN():
 
     def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='',
-                 model_path = '', save_model_path='', batch_size=10, epochs=100,
-                  drop_per=0.1, input_shape=(), units=0, output_size=0,
+                 nullset_path = '', nullset_labels_path='',
+                 model_path = '', save_model_path='', trbatch_size=10, tebatch_size=1, epochs=100, curdim=0, input_size=10,
+                  drop_per=0.1, units=100, output_size=1, steps=5, learn_rate=0.005,
                  regression=False, classification=False):
         try:
             with open(data_path, 'rb') as data_file:
@@ -21,26 +22,27 @@ class Atom_RNN():
             print('Data path does not exist')
 
         if isinstance(self.data, list):
-            self.data = self.data_to_numpy(self.data)
+            self.data = self.data_to_numpy(self.data, self.input_size)
 
 
-        self.batch_size = batch_size
+        self.trbatch_size = trbatch_size
+        self.tebatch_size = tebatch_size
         self.epochs = epochs
         self.drop_per = drop_per
-
-
-        self.input_shape = input_shape
+        self.learn_rate = learn_rate
+        self.steps = steps
+        # self.input_shape = input_shape
         self.units = units
         self.output_size = output_size
-
-
+        self.input_size = input_size
+        self.curdim = curdim
 
         if test_path != '':
 
             with open(test_path, 'rb') as test_file:
                 self.test_data = pickle.load(test_file)
             if isinstance(self.test_data, list):
-                self.test_data = self.data_to_numpy(self.test_data)
+                self.test_data = self.data_to_numpy(self.test_data, self.input_size)
 
 
             with open(test_label_path, 'rb') as test_label_file:
@@ -48,8 +50,9 @@ class Atom_RNN():
 
             self.test_labels = np.asarray(self.test_labels)
             if isinstance(self.test_labels, list):
-                self.test_labels = self.data_to_numpy(self.test_labels)
+                self.test_labels = self.data_to_numpy(self.test_labels, self.output_size)
 
+            self.test_labels = self.splice_labels(self.test_labels, self.curdim)
 
 
         if train_label_path != '':
@@ -57,27 +60,38 @@ class Atom_RNN():
                 self.train_labels = pickle.load(train_label_file)
             self.train_labels = np.asarray(self.train_labels)
             if isinstance(self.train_labels, list):
-                self.train_labels = self.data_to_numpy(self.train_labels)
+                self.train_labels = self.data_to_numpy(self.train_labels, self.output_size)
+            self.train_labels = self.splice_labels(self.train_labels, self.curdim)
 
 
-        else:
-            raise Exception('Train label path is not valid.')
+        if nullset_path != '':
+            # nullset is either train set, test set, or validation set
+            with open(nullset_path, 'rb') as null_file:
+                self.nullset = pickle.load(null_file)
+            if not isinstance(self.nullset, np.ndarray):
+                self.nullset = self.data_to_numpy(self.nullset, self.input_size)
+
+            # nullset is the randomized labels of the previous dataset
+
+            with open(nullset_labels_path, 'rb') as null_labels_file:
+                self.nullset_labels = pickle.load(null_labels_file)
+            if not isinstance(self.nullset_labels, np.ndarray):
+                self.nullset_labels = self.data_to_numpy(self.nullset_labels, self.output_size)
 
 
-        self.data = self.data.T
-        self.data = self.batchify(self.data)
-        self.train_labels = self.batchify(self.train_labels)
+        # self.data = self.data.T
+        self.data = self.stepify(self.data, boollabels=False)
+        self.train_labels = self.stepify(self.train_labels, boollabels=True)
         try:
-            self.test_data = self.batchify(self.test_data)
+            self.test_data = self.stepify(self.test_data, boollabels=False)
         except:
             self.test_data = None
 
 
         try:
-            self.test_labels = self.batchify(self.test_data)
+            self.test_labels = self.stepify(self.test_labels, boollabels=True)
         except:
             self.test_labels = None
-        # self.test_data = self.test_data.reshape
 
 
         self.history = dict()
@@ -99,33 +113,62 @@ class Atom_RNN():
             else:
                 ValueError('Model is not defined.')
 
-
-
-    def batchify(self, arr):
-        temp = np.empty((self.batch_size, arr.shape[1]))
-
-        num_batches = len(arr)/self.batch_size
-        num_batches = int(np.floor(num_batches))
-
-        new_arr = np.empty((self.batch_size, arr.shape[1], num_batches))
-        for jj in range(num_batches):
-            for ii in range(self.batch_size):
-                temp[ii, :] = arr[jj*self.batch_size + ii, :]
-            new_arr[:,:,jj] = temp
-
-
+    def __converttomatrix(self, data, labels=False):
+        X, Y = [], []
+        if labels:
+            for ii in range(data.shape[0] - self.steps):
+                d = ii + self.steps
+                Y.append(data[d])
+            return np.array(Y)
+        else:
+            for ii in range(data.shape[0] - self.steps):
+                d = ii + self.steps
+                X.append(data[ii:d, :])
+            return np.array(X)
 
 
 
+    def splice_labels(self, labels, dim):
+        try:
+            labs = labels[:, dim]
+        except:
+            labs = None
+        return labs
 
-    def data_to_numpy(self, lst):
+    def stepify(self, arr, boollabels=False):
+        # step_arr = np.empty((arr.shape[1]))
+        if boollabels:
+            for ii in range(self.steps):
+                newrow = arr[-1]
+                # newrow = np.reshape(newrow, (1, arr.shape[1]))
+                arr = np.append(arr, newrow)
+
+            # arr = (4__, 30, self.step)
+            new_arr = self.__converttomatrix(arr, labels=boollabels)
+            # new_arr = np.reshape(new_arr, (new_arr.shape[0], 1))
+        else:
+            for ii in range(self.steps):
+                newrow = arr[-1, :]
+                newrow = np.reshape(newrow, (1, arr.shape[1]))
+                arr = np.append(arr, newrow, axis=0)
+
+            # arr = (4__, 30, self.step)
+            new_arr = self.__converttomatrix(arr, labels=boollabels)
+            new_arr = np.reshape(new_arr, (new_arr.shape[0], new_arr.shape[2], new_arr.shape[1]))
+        return new_arr
+
+
+
+
+
+    def data_to_numpy(self, lst, dims):
         # make encoded data into numpy arrays
         holder = []
         for ele in lst:
             # converts list of lists into a numpy array
             if ele == []:
                 # check if empty list, not sure why empty lists are in the data.
-                ele = [0., 0.]
+                ele = list(np.zeros((dims, 1)))
             temp = np.array(ele)
             temp = temp.reshape((temp.shape[0], 1))
             holder.append(temp)
@@ -138,18 +181,23 @@ class Atom_RNN():
 
     def build_regression_model(self):
         model = keras.Sequential([
+            # layers.Dense(30, input_shape=(30,self.steps)),
             layers.SimpleRNN(
-                units=self.units,
+                units=100,
+                input_shape=(30, self.steps),
+                # batch_size=self.batch_size,
+                activation='tanh'
                 # dropout=self.drop_per,
-                input_shape=self.input_shape
+                # input_shape=self.input_shape
             ),
+            layers.Dense(20, activation='tanh'),
             layers.Dense(self.output_size,
-                         activation='softmax')
+                         activation='linear')
         ])
-
+        sgd = keras.optimizers.SGD(learning_rate=self.learn_rate)
         model.compile(
 
-            optimizer='adam',
+            optimizer=sgd,
             loss=tf.keras.losses.mean_squared_error,
             metrics=['mean_squared_error']
 
@@ -176,46 +224,49 @@ class Atom_RNN():
         )
         return model
     def train(self):
-        try:
-            self.history = self.model.fit(
-                self.data, self.train_labels, epochs=self.epochs, batch_size=self.batch_size, shuffle=False
-                # shuffles batches
-                , verbose=1  # supresses progress bar
+
+        self.history = self.model.fit(
+            self.data, self.train_labels, epochs=self.epochs
+            # batch_size=self.trbatch_size
+            # , shuffle=False
+            # shuffles batches
+            , verbose=1  # supresses progress bar
             )
-        except ValueError:
-            self.data = self.data.T
-            self.history = self.model.fit(
-                self.data, self.train_labels, epochs=self.epochs, batch_size=self.batch_size, shuffle=False
-                # shuffles batches
-                , verbose=1  # supresses progress bar
-            )
+        # except ValueError:
+        #     self.data = self.data.T
+        #     self.history = self.model.fit(
+        #         self.data, self.train_labels, epochs=self.epochs, batch_size=self.batch_size, shuffle=False
+        #         # shuffles batches
+        #         , verbose=1  # supresses progress bar
+        #     )
         return self.history
 
 
     def test(self):
-        try:
-            result = self.model.evaluate(self.test_data, self.test_labels, batch_size=self.batch_size)
 
-        except:
-            self.test_data = self.test_data.T # transpose data
-            result = self.model.evaluate(self.test_data, self.test_labels, batch_size=self.batch_size)
+        result = self.model.evaluate(self.test_data, self.test_labels
+                                     # , batch_size=self.tebatch_size
+                                     , verbose=1
+                                     )
+
+        # except:
+        #     self.test_data = self.test_data.T # transpose data
+        #     result = self.model.evaluate(self.test_data, self.test_labels, batch_size=self.batch_size)
 
         if len(result) > 2:
             print(f'Test results: Loss= {result[0]:.3f}, Accuracy = {100*result[1]:.3f}%')
             return result[0], result[1]
         else:
             print(f'Test results: Loss= {result[0]:.3f}')
-            return result
+            return result[0]
 
 
     def predict(self):
         # self.data = self.data.T
-        try:
-            result = self.model.predict(self.data, batch_size=self.batch_size)
-        except:
-            self.data = self.data.T
-            result = self.model.predict(self.data, batch_size=self.batch_size)
+
+        result = self.model.predict(self.data)
         return result
+
 
     def save_model(self):
 
@@ -225,26 +276,177 @@ class Atom_RNN():
 
 
 if __name__ == '__main__':
-    RNN = Atom_RNN(
-        data_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\RNN_Data\train_atom_vectors_avg_rnn.pkl'
-        , train_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\RNN_Data\train_labels_rnn.pkl'
-        , test_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\RNN_Data\test_atom_vectors_avg_rnn.pkl'
-        , test_label_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\RNN_Data\test_labels_rnn.pkl'
-        # , model_path=r''
-        , save_model_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\RNN_Data\rnn_model_100'
-        , batch_size=10
-        , epochs=100
-        # , drop_per=0.1
-        , regression=True
-        , input_shape=(454,2)
-        , output_size=2
-        , units=454
+    with tf.device('/cpu:0'):
+        trbatch_size = 5
+        tebatch_size = 1
+        inner_epochs = 1
+        outer_epochs = 5
 
-                   )
+        epochs = outer_epochs
+
+        learn_rate = 0.005
+        # curdim = 0
+        model_paths = [
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\rnn_model_00',
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\rnn_model_01',
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\rnn_model_02'
+        ]
+
+        # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl', 'rb') as f10:
+            # graph_dict = pickle.load(f10)
+        graph_dict = dict()
+
+        output_dimension = len(model_paths) # total output dimension
+        tr_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\train.pkl'
+        trlabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\train_labels.pkl'
+
+        te_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\test.pkl'
+        telabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\test_labels.pkl'
+
+        restr = np.empty((output_dimension, epochs))
+        reste = np.empty((output_dimension, epochs))
+        # null = np.empty((output_dimension, epochs, null_arr.shape[2]))
+        respred = None
+        null_holder = []
+        dict1 = dict()
+        dict2 = dict()
+        dict3 = dict()
+        dict4 = dict()
+        for dim in range(output_dimension):
+            RNN = Atom_RNN(
+                data_path=tr_path
+                , train_label_path=trlabels_path
+                , test_path=te_path
+                , test_label_path=telabels_path
+                # , model_path=r''
+                , save_model_path=model_paths[dim]
+                , trbatch_size=trbatch_size
+                , epochs=inner_epochs
+                # , drop_per=0.1
+                , regression=True
+                # , input_shape=(454,30)
+                , output_size=1
+                # , units=454
+
+            )
+            RNN.save_model()
+            for ep in range(epochs):
+                RNN = Atom_RNN(
+                    data_path=tr_path
+                    , train_label_path=trlabels_path
+                    , test_path=te_path
+                    , test_label_path=telabels_path
+                    , model_path=model_paths[dim]
+                    , save_model_path=model_paths[dim]
+                    , trbatch_size=trbatch_size
+                    , epochs=inner_epochs
+                    # , drop_per=0.1
+                    , regression=True
+                    # , input_shape=(454,30)
+                    , output_size=1
+                    # , units=454
+
+                               )
+
+                print(f'Epoch: {ep}')
+                history = RNN.train()
+                trloss = history.history['loss']
+                restr[dim, ep] = trloss[0]
+                RNN.save_model()
+                reste[dim, ep] = RNN.test()
+                keras.backend.clear_session()
+                #         num_nulls = null_arr.shape[2]
+                #         for jj in range(num_nulls):
+                #             AFF = Atom_FFNN(
+                #                 data_path=tr_path,
+                #                 # local atom vector path
+                #                 train_label_path=trlabels_path,
+                #                 batch_size=set_batch_size,
+                #                 epochs=set_epochs,
+                #                 regression=True,
+                #                 # classification=True,
+                #                 model_path=model_paths[dim],
+                #                 save_model_path=model_paths[dim],
+                #                 # current_dim=dim,
+                #                 current_dim=curdim,
+                #                 test_path=te_path,
+                #                 test_label_path=telabels_path,
+                #                 nullset_path=te_path,
+                #                 nullset_labels=null_arr[:, :, jj],
+                #                 learning_rate=learn_rate,
+                #                 dense_out=1,
+                #                 hidden=250,
+                #                 dense_in=10,
+                #                 drop_per=.1,
+                #                 normalize=False
+                #             )
+                #             null[dim, ii, jj], _ = AFF.test_nullset()
 
 
-    RNN.train()
 
+
+            #
+            # null_avg = np.average(null, axis=2)
+
+            param_tr = f'rnn_100ep_train_rico_BOWsum_w_100_3dim_100rnntanh-20tanh'
+            param_te = f'rnn_100ep_test_rico_BOWsum_w_100_3dim_100rnntanh-20tanh'
+            # param_null = 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
+
+
+            dict1['loss'] = restr
+            dict1['epochs'] = epochs
+            graph_dict[param_tr] = dict1
+
+            dict2['loss'] = reste
+            dict2['epochs'] = epochs
+            graph_dict[param_te] = dict2
+
+            # dict3['loss'] = null_avg
+            # dict3['epochs'] = epochs
+            # graph_dict[param_null] = dict3
+
+        for dim in range(output_dimension):
+            param_pred = f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh'
+            AFF = Atom_RNN(
+                data_path=tr_path,
+                # local atom vector path
+                train_label_path=trlabels_path,
+                trbatch_size=trbatch_size,
+                epochs=inner_epochs,
+                regression=True,
+                # classification=True,
+                model_path=model_paths[dim],
+                save_model_path=model_paths[dim],
+                # current_dim=dim,
+                # current_dim=dim,
+                # test_path=te_path,
+                # test_label_path=telabels_path,
+                # nullset_path=te_path,
+                # nullset_labels=null_arr[:, :, jj],
+                # learning_rate=learn_rate,
+                # dense_out=1,
+                # hidden=30,
+                # dense_in=10,
+                # drop_per=.1,
+                # normalize=False
+            )
+            resp = AFF.predict()
+            resp = np.reshape(resp, (len(resp), 1))
+            try:
+                if respred == None:
+                    respred = np.empty((len(resp), output_dimension))
+            except:
+                respred[:, dim] = resp[:, 0]
+
+            print(resp)
+
+        dict4['prediction'] = respred
+        graph_dict[param_pred] = dict4
+
+        with open(
+                r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl',
+                'wb') as f11:
+            pickle.dump(graph_dict, f11)
 
     #     self, data_path = '', train_label_path = '', test_path = '', test_label_path = '',
     #     model_path = '', save_model_path = '', batch_size = 10, epochs = 100,

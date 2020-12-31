@@ -160,11 +160,11 @@ class Atom_FFNN:
 
             # layers.Dense(self.dense2, activation='relu', input_shape=(2,)),
             layers.Dense(self.dense2, input_shape=(self.dense2,)),
-            # layers.Dense(80, activation='tanh'),
+            # layers.Dense(30, activation='tanh'),
             # layers.Dropout(self.drop_per),
             layers.Dense(260, activation='tanh'),
             # layers.Dropout(self.drop_per),
-            layers.Dense(13, activation='tanh'),
+            # layers.Dense(13, activation='tanh'),
             layers.Dense(self.dense1, activation='linear')
         ])
 
@@ -362,11 +362,11 @@ if __name__ == '__main__':
         set_batch_size = 5
         set_epochs = 1
         learn_rate = 0.005
-        curdim = 2
+        # curdim = 0
         model_paths = [
-            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh-26tanh_00',
-            # r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh-26tanh_01',
-            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh-26tanh_02',
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_00',
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_01',
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_02',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_03',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_04',
         #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_05',
@@ -396,8 +396,8 @@ if __name__ == '__main__':
                 # classification=True,
                 # model_path=model_paths[dim],
                 save_model_path=model_paths[dim],
-                # current_dim=dim,
-                current_dim=curdim,
+                current_dim=dim,
+                # current_dim=curdim,
                 test_path=te_path,
                 test_label_path=telabels_path,
                 nullset_path=te_path,
@@ -472,10 +472,10 @@ if __name__ == '__main__':
         # null_avg = np.average(null, axis=2)
 
 
-        param_tr = 'ff_500ep_train_rico_BOWsum_w_100_3dim_260tanh-26tanh_02'
-        param_te = 'ff_500ep_test_rico_BOWsum_w_100_3dim_260tanh-26tanh_02'
+        param_tr = 'ff_500ep_train_rico_BOWsum_w_100_3dim_260tanh'
+        param_te = 'ff_500ep_test_rico_BOWsum_w_100_3dim_260tanh'
         # param_null = 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
-        param_pred = 'ff_500ep_pred_rico_BOWsum_w_100_3dim_260tanh-26tanh_02'
+
 
 
         dict1['loss'] = restr
@@ -493,6 +493,7 @@ if __name__ == '__main__':
 
 
         for dim in range(output_dimension):
+            param_pred = 'ff_500ep_pred_rico_BOWsum_w_100_3dim_260tanh'
             AFF = Atom_FFNN(
                 data_path=tr_path,
                 # local atom vector path
@@ -504,7 +505,7 @@ if __name__ == '__main__':
                 model_path=model_paths[dim],
                 save_model_path=model_paths[dim],
                 # current_dim=dim,
-                current_dim=curdim,
+                current_dim=dim,
                 test_path=te_path,
                 test_label_path=telabels_path,
                 nullset_path=te_path,
