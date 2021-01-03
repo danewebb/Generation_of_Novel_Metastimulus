@@ -13,7 +13,7 @@ class Atom_RNN():
     def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='',
                  nullset_path = '', nullset_labels_path='',
                  model_path = '', save_model_path='', trbatch_size=10, tebatch_size=1, epochs=100, curdim=0, input_size=10,
-                  drop_per=0.1, units=100, output_size=1, steps=5, learn_rate=0.005,
+                  drop_per=0.1, units=100, output_size=1, steps=5, learn_rate=0.005, seed = 24,
                  regression=False, classification=False):
         try:
             with open(data_path, 'rb') as data_file:
@@ -36,7 +36,7 @@ class Atom_RNN():
         self.output_size = output_size
         self.input_size = input_size
         self.curdim = curdim
-
+        self.seed = seed
         if test_path != '':
 
             with open(test_path, 'rb') as test_file:
@@ -180,6 +180,8 @@ class Atom_RNN():
 
 
     def build_regression_model(self):
+        winit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
+        binit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
         model = keras.Sequential([
             # layers.Dense(30, input_shape=(30,self.steps)),
             layers.SimpleRNN(
@@ -205,14 +207,17 @@ class Atom_RNN():
         return model
 
     def build_classification_model(self):
+        winit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
+        binit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
         model = keras.Sequential([
             layers.SimpleRNN(
                 units=self.units,
                 # dropout=self.drop_per,
                 # input_shape=self.input_shape,
+            kernel_initializer = winit, bias_initializer = binit
             ),
             layers.Dense(self.output_size,
-                         activation='softmax')
+                         activation='softmax', kernel_initializer=winit, bias_initializer=binit)
         ])
 
         model.compile(
@@ -280,7 +285,7 @@ if __name__ == '__main__':
         trbatch_size = 5
         tebatch_size = 1
         inner_epochs = 1
-        outer_epochs = 5
+        outer_epochs = 100
 
         epochs = outer_epochs
 
@@ -436,7 +441,8 @@ if __name__ == '__main__':
                 if respred == None:
                     respred = np.empty((len(resp), output_dimension))
             except:
-                respred[:, dim] = resp[:, 0]
+                pass
+            respred[:, dim] = resp[:, 0]
 
             print(resp)
 

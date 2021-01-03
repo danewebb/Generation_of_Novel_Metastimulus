@@ -124,44 +124,68 @@ def plot_one_loss(graph_dict, x, y, title, colors, linestyles = [], dicts_wanted
 
 def insertion_sort(sort_arr, follow_arr, sort='ascending'):
     # sorts the sort_arr. the indices sorted in the sort_arr are simultaneously changed in the follow_arr
-    if len(sort_arr) != len(follow_arr):
+    if sort_arr.shape[0] != follow_arr.shape[0]:
         raise ValueError('prediction and actual arrays must be the same size.')
     for ii in range(1, len(sort_arr)):
         key = sort_arr[ii]
-        fkey = follow_arr[ii]
+        fkey = follow_arr[ii, :]
         jj = ii-1
         if sort == 'ascending':
             while jj >= 0 and key < sort_arr[jj]:
                 sort_arr[jj+1] = sort_arr[jj]
-                follow_arr[jj+1] = follow_arr[jj]
+                follow_arr[jj+1, :] = follow_arr[jj, :]
                 jj -= 1
         elif sort == 'descending':
             while jj >= 0 and key > sort_arr[jj]:
                 sort_arr[jj + 1] = sort_arr[jj]
-                follow_arr[jj + 1] = follow_arr[jj]
+                follow_arr[jj + 1, :] = follow_arr[jj, :]
                 jj -= 1
 
         sort_arr[jj+1] = key
-        follow_arr[jj+1] = fkey
+        follow_arr[jj+1, :] = fkey
 
     return sort_arr, follow_arr
 
 
+
+def ordered_components(prediction, actual, num, color_list):
+    all_idx = range(actual.shape[0])
+    dims = actual.shape[1]
+    # nump = random.sample(all_idx, num)
+    sorter = actual [:, 0]
+    a = actual[:, 1:]
+    follower = np.concatenate((a, prediction), axis=1)
+    sor, fol = insertion_sort(sorter, follower)
+    sor = np.reshape(sor, (sor.shape[0], 1))
+    act = np.concatenate((sor, fol[:, :2]), axis=1)
+    pred = fol[:, actual.shape[1]-1:]
+    for ii in range(dims):
+
+        plt.plot(all_idx, act[:, ii], color=color_list[ii], label=f'Dim{ii} Actual')
+        plt.plot(all_idx, pred[:, ii], linestyle='dashed', color=color_list[ii], label=f'Dim{ii} Prediction')
+
+
+    plt.legend()
+    plt.show()
+
 def comparative_bar_plot(prediction, actual, nbars, y, title, dim=1, width=0.35, sort='ascending', plotall=False):
-    x1 = []; x2 = []
+    # x1 = []; x2 = []
 
     all_idx = range(len(prediction))
     if plotall:
         ind = all_idx
-        for ii in range(len(prediction)):
-            x1.append(prediction[ii, dim])
-            x2.append(actual[ii, dim])
+        # for ii in range(len(prediction)):
+        x1 = prediction[:, dim]
+        x2 = actual[:, dim]
     else:
         ind = np.arange(nbars)
+        num = random.sample(all_idx, nbars)
+
+        x1 = np.empty((nbars, ))
+        x2 = np.empty((nbars, ))
         for ii in range(nbars):
-            num = random.sample(all_idx, nbars)
-            x1.append(prediction[num, dim])
-            x2.append(actual[num, dim])
+            x1[ii] = prediction[num[ii], dim]
+            x2[ii] = actual[num[ii], dim]
 
     if sort == 'ascending' or sort == 'descending':
         x2, x1 = insertion_sort(x2, x1, sort)
@@ -214,7 +238,7 @@ def scatterplot3d(prediction, actual, type='', num_points=20, colors=[], styles=
             ax.plot([zer[count], actual[ii, 0]], [zer[count], actual[ii, 1]], [zer[count], actual[ii, 2]],
                     linestyle=styles[1], color=colors[count])
             ax.scatter3D(prediction[ii, 0], prediction[ii, 1], prediction[ii, 2], color=colors[count])
-            ax.scatter3D(actual[ii, 0], actual[ii, 1], actual[ii, 2], color=colors[count])
+            ax.scatter3D(actual[ii, 0], actual[ii, 1], actual[ii, 2], color=colors[count], marker='x')
             count += 1
         plt.show()
 
@@ -238,7 +262,7 @@ if __name__ == '__main__':
     dim = 0
     x = 'Epochs'
     y = 'Loss'
-    title = f'RNN BOWsum 30dim-rico 3dim-out 100rnntanh-20tanh w100'
+    title = f'FF BOWsum 30dim-rico 3dim-out 260tanh-13tanh w100'
     dims = ['0-dim', '1-dim', '2-dim']
     colors = ['r', 'g', 'b']
     linestyles = ['solid', 'dashed', 'dotted']
@@ -246,7 +270,7 @@ if __name__ == '__main__':
     # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Metastimuli-Learn\Atom-FFNN\graphing_data.pkl', 'rb') as f1:
     #     prob_graph_dict = pickle.load(f1)
     #
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl', 'rb') as f2:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl', 'rb') as f2:
         graph_dict = pickle.load(f2)
 
     # plot_loss(regress_graph_dict, 'Epochs', 'Loss', 'Plot1')
@@ -264,12 +288,12 @@ if __name__ == '__main__':
 
 
     dicts_wanted = [
-        f'rnn_100ep_train_rico_BOWsum_w_100_3dim_100rnntanh-20tanh',
-        f'rnn_100ep_test_rico_BOWsum_w_100_3dim_100rnntanh-20tanh',
+        f'ff_500ep_train_rico_BOWsum_w_100_3dim_260tanh-13tanh',
+        f'ff_500ep_test_rico_BOWsum_w_100_3dim_260tanh-13tanh',
         # 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
                     ]
     shift = [
-        f'rnn_100ep_test_rico_BOWsum_w_100_3dim_100rnntanh-20tanh',
+        f'ff_500ep_test_rico_BOWsum_w_100_3dim_260tanh-13tanh',
         # 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
     ]
     plot_one_loss(graph_dict, x, y, title, colors, dicts_wanted=dicts_wanted, linestyles=linestyles, order=layer_order, shift=shift)
@@ -281,10 +305,10 @@ if __name__ == '__main__':
     #
 
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\train_labels.pkl', 'rb') as f4:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train_labels.pkl', 'rb') as f4:
         act = pickle.load(f4)
-    #
-    #
+
+
 
 
     # pred00_dict = graph_dict[f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh_00']
@@ -297,21 +321,18 @@ if __name__ == '__main__':
     # #
     # pred = np.concatenate((pred00, pred01, pred02), axis=1)
 
-    pred_dict = graph_dict[f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh']
+    pred_dict = graph_dict[f'ff_500ep_pred_rico_BOWsum_w_100_3dim_260tanh-13tanh']
     pred = pred_dict['prediction']
 
-    title = f'Prediction vs. Actual\n RNN BOWsum 30dim-rico w100 3dim-out 100rnntanh-20tanh'
-    # subx = 3
-    # suby = 3
-    # line = ['solid', 'dashed']
-    # ord = [5, 0]
-    # plot_pred_v_actual(pred, act, subx, suby, title, linestyles=line, order=ord)
+    title = f'Prediction vs. Actual\n FF BOWsum 30dim-rico w100 3dim-out 260tanh-13tanh'
 
+    num = 50
+    ordered_components(pred, act, num, colors)
 
     nbars = 100
     ylab = f'Dimension 0{dim} Component'
 
-    comparative_bar_plot(pred, act, nbars, ylab, title, dim=dim, plotall=False)
+    # comparative_bar_plot(pred, act, nbars, ylab, title, dim=dim, plotall=False)
 
     color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
-    scatterplot3d(pred, act, type='', colors=color_list, num_points=5, styles = ['-', 'dashed'], seed=24)
+    scatterplot3d(pred, act, type='vector', colors=color_list, num_points=5, styles = ['-', 'dashed'], seed=3)

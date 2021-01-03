@@ -13,7 +13,7 @@ from statistics import mean
 class Atom_FFNN:
     def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='',
                  model_path = '', save_model_path='', batch_size=10, epochs=100, nullset_path='', nullset_labels_path='', nullset_labels=None,
-                  drop_per=0.1, dense_out=2, dense_in=2, hidden=50, current_dim=0, learning_rate=0.001,
+                  drop_per=0.1, dense_out=2, dense_in=2, hidden=50, current_dim=0, learning_rate=0.001, seed=24,
                  regression=False, classification=False, normalize=False):
 
 
@@ -36,7 +36,7 @@ class Atom_FFNN:
         self.dense1 = dense_out
         self.dense2 = dense_in
         self.hidden = hidden
-
+        self.seed = seed
         if nullset_path != '':
             # nullset is either train set, test set, or validation set
             with open(nullset_path, 'rb') as null_file:
@@ -153,19 +153,20 @@ class Atom_FFNN:
     #     return padded_data, data_size
 
     def build_regression_model(self):
-
+        winit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
+        binit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
         model = keras.Sequential([
             # layers.Dense(self.dense3, activation='relu'),
             # layers.GlobalAveragePooling1D(),
 
             # layers.Dense(self.dense2, activation='relu', input_shape=(2,)),
-            layers.Dense(self.dense2, input_shape=(self.dense2,)),
+            layers.Dense(self.dense2, input_shape=(self.dense2,), kernel_initializer=winit, bias_initializer=binit),
             # layers.Dense(30, activation='tanh'),
             # layers.Dropout(self.drop_per),
-            layers.Dense(260, activation='tanh'),
+            layers.Dense(260, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
             # layers.Dropout(self.drop_per),
-            # layers.Dense(13, activation='tanh'),
-            layers.Dense(self.dense1, activation='linear')
+            layers.Dense(13, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
+            layers.Dense(self.dense1, activation='linear', kernel_initializer=winit, bias_initializer=binit)
         ])
 
         sgd = keras.optimizers.SGD(learning_rate=self.learn_rate)
@@ -173,6 +174,7 @@ class Atom_FFNN:
         model.compile(
 
             optimizer=sgd,
+
             loss=tf.keras.losses.mean_squared_error,
             metrics=['mean_squared_error']
 
@@ -419,7 +421,7 @@ if __name__ == '__main__':
         restr = np.empty((output_dimension, epochs))
         reste = np.empty((output_dimension, epochs))
         # null = np.empty((output_dimension, epochs, null_arr.shape[2]))
-        respred = []
+
         null_holder = []
         dict1 = dict()
         dict2 = dict()
@@ -427,6 +429,28 @@ if __name__ == '__main__':
         dict4 = dict()
 
         for dim in range(output_dimension):
+            AFF = Atom_FFNN(
+                data_path= tr_path, # local atom vector path
+                train_label_path= trlabels_path,
+                batch_size=set_batch_size,
+                epochs=set_epochs,
+                regression=True,
+                # classification=True,
+                # model_path=model_paths[dim],
+                save_model_path=model_paths[dim],
+                current_dim=dim,
+                # current_dim=curdim,
+                test_path=te_path,
+                test_label_path=telabels_path,
+                nullset_path=te_path,
+                # nullset_labels_path=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\BOWavg_rico\nulltest_set.pkl',
+                learning_rate=learn_rate,
+                dense_out=1,
+                hidden=300,
+                dense_in=30,
+                drop_per=.1,
+                normalize=False
+            )
             for ii in range(epochs):
                 print(f'Epoch: {ii}')
                 history = AFF.train()
@@ -472,10 +496,10 @@ if __name__ == '__main__':
         # null_avg = np.average(null, axis=2)
 
 
-        param_tr = 'ff_500ep_train_rico_BOWsum_w_100_3dim_260tanh'
-        param_te = 'ff_500ep_test_rico_BOWsum_w_100_3dim_260tanh'
+        param_tr = 'ff_500ep_train_rico_BOWsum_w_100_3dim_260tanh-13tanh'
+        param_te = 'ff_500ep_test_rico_BOWsum_w_100_3dim_260tanh-13tanh'
         # param_null = 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
-
+        param_pred = 'ff_500ep_pred_rico_BOWsum_w_100_3dim_260tanh-13tanh'
 
 
         dict1['loss'] = restr
@@ -491,9 +515,9 @@ if __name__ == '__main__':
         # graph_dict[param_null] = dict3
 
 
-
+        resp = []
         for dim in range(output_dimension):
-            param_pred = 'ff_500ep_pred_rico_BOWsum_w_100_3dim_260tanh'
+
             AFF = Atom_FFNN(
                 data_path=tr_path,
                 # local atom vector path
@@ -517,10 +541,14 @@ if __name__ == '__main__':
                 # drop_per=.1,
                 # normalize=False
             )
-            respred.append(AFF.predict())
+            resp = AFF.predict()
 
-        print(respred)
-        respred = np.asarray(respred)
+            try:
+                respred[:, dim] = resp[:, 0]
+            except:
+                respred = np.empty((resp.shape[0], output_dimension))
+                respred[:, dim] = resp[:, 0]
+        print(f'0 dim prediction \n {respred[:, 0]}')
         dict4['prediction'] = respred
         graph_dict[param_pred] = dict4
 
