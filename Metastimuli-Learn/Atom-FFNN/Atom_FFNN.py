@@ -8,13 +8,17 @@ from tensorflow.keras import layers
 from keras.utils import plot_model
 from matplotlib import pyplot as plt
 from statistics import mean
+from kerastuner.tuners import RandomSearch
+from kerastuner.tuners import BayesianOptimization
+from kerastuner.tuners import Hyperband
+
 
 
 class Atom_FFNN:
     def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='',
                  model_path = '', save_model_path='', batch_size=10, epochs=100, nullset_path='', nullset_labels_path='', nullset_labels=None,
                   drop_per=0.1, dense_out=2, dense_in=2, hidden=50, current_dim=0, learning_rate=0.001, seed=24,
-                 regression=False, classification=False, normalize=False):
+                 regression=False, classification=False, normalize=False, optimize=False):
 
 
         try:
@@ -87,22 +91,24 @@ class Atom_FFNN:
 
         self.history = dict()
 
-
-        if save_model_path != '':
-            self.save_model_path = save_model_path
-        else:
-            Warning('save_model_path does not exist. Model will not save.')
-
-        if model_path != '':
-            self.model = keras.models.load_model(model_path)
-        else:
-            print('Building new model')
-            if regression:
-                self.model = self.build_regression_model()
-            elif classification:
-                self.model = self.build_classification_model()
+        if not optimize:
+            if save_model_path != '':
+                self.save_model_path = save_model_path
             else:
-                ValueError('Model is not defined.')
+                Warning('save_model_path does not exist. Model will not save.')
+
+            if model_path != '':
+                self.model = keras.models.load_model(model_path)
+            else:
+                print('Building new model')
+                if regression:
+                    self.model = self.build_regression_model()
+                elif classification:
+                    self.model = self.build_classification_model()
+                else:
+                    ValueError('Model is not defined.')
+
+
 
 
 
@@ -152,7 +158,15 @@ class Atom_FFNN:
     #
     #     return padded_data, data_size
 
+
+    # def build_model(self, hp):
+    #     inputs = keras.Input(shape=(self.dense2,))
+    #     x = inputs
+    #     for ii in range(hp.Int('features_1', min_value=5, max_value=500, step=5)):
+
     def build_regression_model(self):
+
+
         winit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
         binit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
         model = keras.Sequential([
@@ -330,7 +344,7 @@ class Atom_FFNN:
         param_dict = dict()
 
         for ep in range(self.epochs):
-            l, a = AFF.test()
+            l, a = self.test()
             loss.append(l)
             acc.append(a)
 
@@ -346,7 +360,7 @@ class Atom_FFNN:
         param_dict = dict()
 
         for ep in range(self.epochs):
-            l, a = AFF.test()
+            l, a = self.test()
             loss.append(l)
 
 
@@ -355,6 +369,89 @@ class Atom_FFNN:
         regress_graph_dict[param] = param_dict
 
         return regress_graph_dict
+
+    def build_model(self, hp):
+        model = keras.Sequential()
+
+        model.add(layers.Dense(hp.Int('input_units', min_value=16, max_value=960, step=8),
+                                    input_shape=(self.dense2,),
+                                    activation=hp.Choice('input_activation', values=['tanh', 'sigmoid', 'softmax']))),
+        for ii in range(hp.Int('num_h-layers', 1, 6)):
+            model.add(
+                layers.Dense(
+                    hp.Int(f'Dense_{ii}_units', min_value=8, max_value=1600, step=4),
+                           activation=hp.Choice(f'Dense_{ii}_activation', values=['tanh', 'sigmoid', 'softmax'])
+                )
+            )
+
+        model.add(layers.Dense(1, activation='linear'))
+
+        sgd = keras.optimizers.SGD(learning_rate=self.learn_rate)
+
+        model.compile(
+            optimizer=sgd,
+            loss=tf.keras.losses.mean_squared_error,
+            metrics=['mean_squared_error']
+
+        )
+
+        return model
+
+
+    def random_search(self):
+        tuner = RandomSearch(
+            self.build_model,
+            objective='val_mean_squared_error',
+            max_trials=1,
+            executions_per_trial=1,
+            # directory=dir,
+            )
+
+        tuner.search(
+            x = self.data,
+            y = self.train_labels,
+            epochs = self.epochs,
+            batch_size = self.batch_size,
+            validation_data=(self.test_data, self.test_labels)
+
+        )
+
+    def bayesian(self):
+        tuner = BayesianOptimization(
+            self.build_model,
+            objective='val_mean_squared_error',
+            max_trials=3,
+            num_initial_points=3,
+            seed=self.seed,
+            # directory=dir,
+            )
+
+        tuner.search(
+            x = self.data,
+            y = self.train_labels,
+            epochs = self.epochs,
+            batch_size = self.batch_size,
+            validation_data=(self.test_data, self.test_labels)
+        )
+
+    def hyperband(self):
+        tuner = Hyperband(
+            self.build_model,
+            objective='val_mean_squared_error',
+            max_epochs=self.epochs+10,
+            factor=3,
+            hyperband_iterations= 5, # The number of times to iterate over the full Hyperband algorithm. It is recommended to set this to as high a value as is within your resource budget.
+            # directory=dir,
+            seed=self.seed
+            )
+
+        tuner.search(
+            x = self.data,
+            y = self.train_labels,
+            epochs = self.epochs,
+            batch_size = self.batch_size,
+            validation_data=(self.test_data, self.test_labels)
+        )
 
 
 
@@ -369,15 +466,14 @@ if __name__ == '__main__':
             r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_00',
             r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_01',
             r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_02',
-        #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_03',
-        #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_04',
-        #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_05',
-        #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_06',
-        #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_07',
-        #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_08',
-        #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_09',
+            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_03',
+            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_04',
+            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_05',
+            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_06',
+            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_07',
+            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_08',
+            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_09',
         ]
-
 
         tr_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train.pkl'
         trlabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train_labels.pkl'
@@ -385,13 +481,11 @@ if __name__ == '__main__':
         te_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\test.pkl'
         telabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\test_labels.pkl'
 
-
-
         output_dimension = len(model_paths)
         for dim in range(output_dimension):
             AFF = Atom_FFNN(
-                data_path= tr_path, # local atom vector path
-                train_label_path= trlabels_path,
+                data_path=tr_path,  # local atom vector path
+                train_label_path=trlabels_path,
                 batch_size=set_batch_size,
                 epochs=set_epochs,
                 regression=True,
@@ -430,8 +524,8 @@ if __name__ == '__main__':
 
         for dim in range(output_dimension):
             AFF = Atom_FFNN(
-                data_path= tr_path, # local atom vector path
-                train_label_path= trlabels_path,
+                data_path=tr_path,  # local atom vector path
+                train_label_path=trlabels_path,
                 batch_size=set_batch_size,
                 epochs=set_epochs,
                 regression=True,
@@ -489,18 +583,18 @@ if __name__ == '__main__':
         #             null[dim, ii, jj], _ = AFF.test_nullset()
         #
         #
-        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl', 'rb') as f10:
+        with open(
+                r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl',
+                'rb') as f10:
             graph_dict = pickle.load(f10)
         # graph_dict = dict()
         #
         # null_avg = np.average(null, axis=2)
 
-
         param_tr = 'ff_500ep_train_rico_BOWsum_w_100_3dim_260tanh-13tanh'
         param_te = 'ff_500ep_test_rico_BOWsum_w_100_3dim_260tanh-13tanh'
         # param_null = 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
         param_pred = 'ff_500ep_pred_rico_BOWsum_w_100_3dim_260tanh-13tanh'
-
 
         dict1['loss'] = restr
         dict1['epochs'] = epochs
@@ -513,7 +607,6 @@ if __name__ == '__main__':
         # dict3['loss'] = null_avg
         # dict3['epochs'] = epochs
         # graph_dict[param_null] = dict3
-
 
         resp = []
         for dim in range(output_dimension):
@@ -556,9 +649,6 @@ if __name__ == '__main__':
                 r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl',
                 'wb') as f11:
             pickle.dump(graph_dict, f11)
-
-
-
 
         # # training and saving
         # AFF.mod_labels() # only for regression
@@ -604,13 +694,4 @@ if __name__ == '__main__':
         # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Metastimuli-Learn\Atom-FFNN\regress_graph_data.pkl', 'wb') as f4:
         #     pickle.dump(regress_graph_dict, f4)
 
-
         # use case
-
-
-
-
-
-
-
-

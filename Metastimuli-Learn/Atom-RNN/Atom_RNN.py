@@ -185,14 +185,14 @@ class Atom_RNN():
         model = keras.Sequential([
             # layers.Dense(30, input_shape=(30,self.steps)),
             layers.SimpleRNN(
-                units=100,
+                units=240,
                 input_shape=(30, self.steps),
                 # batch_size=self.batch_size,
                 activation='tanh'
                 # dropout=self.drop_per,
                 # input_shape=self.input_shape
             ),
-            layers.Dense(20, activation='tanh'),
+            layers.Dense(111, activation='tanh'),
             layers.Dense(self.output_size,
                          activation='linear')
         ])
@@ -285,21 +285,21 @@ if __name__ == '__main__':
         trbatch_size = 5
         tebatch_size = 1
         inner_epochs = 1
-        outer_epochs = 100
-
+        outer_epochs = 500
+        numsteps = 5
         epochs = outer_epochs
 
         learn_rate = 0.005
         # curdim = 0
         model_paths = [
-            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\rnn_model_00',
-            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\rnn_model_01',
-            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\rnn_model_02'
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\rnn_model500_3dims_rnntanh240-tanh111_00',
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\rnn_model500_3dims_rnntanh240-tanh111_01',
+            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\rnn_model500_3dims_rnntanh240-tanh111_02'
         ]
 
-        # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl', 'rb') as f10:
-            # graph_dict = pickle.load(f10)
-        graph_dict = dict()
+        with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl', 'rb') as f10:
+            graph_dict = pickle.load(f10)
+        # graph_dict = dict()
 
         output_dimension = len(model_paths) # total output dimension
         tr_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\train.pkl'
@@ -328,6 +328,7 @@ if __name__ == '__main__':
                 , trbatch_size=trbatch_size
                 , epochs=inner_epochs
                 # , drop_per=0.1
+                , steps = numsteps
                 , regression=True
                 # , input_shape=(454,30)
                 , output_size=1
@@ -347,6 +348,7 @@ if __name__ == '__main__':
                     , epochs=inner_epochs
                     # , drop_per=0.1
                     , regression=True
+                    , steps=numsteps
                     # , input_shape=(454,30)
                     , output_size=1
                     # , units=454
@@ -375,6 +377,7 @@ if __name__ == '__main__':
                 #                 # current_dim=dim,
                 #                 current_dim=curdim,
                 #                 test_path=te_path,
+                #                 , steps = numsteps
                 #                 test_label_path=telabels_path,
                 #                 nullset_path=te_path,
                 #                 nullset_labels=null_arr[:, :, jj],
@@ -393,8 +396,8 @@ if __name__ == '__main__':
             #
             # null_avg = np.average(null, axis=2)
 
-            param_tr = f'rnn_100ep_train_rico_BOWsum_w_100_3dim_100rnntanh-20tanh'
-            param_te = f'rnn_100ep_test_rico_BOWsum_w_100_3dim_100rnntanh-20tanh'
+            param_tr = f'rnn_500ep_train_rico_BOWsum_w_100_3dims_rnntanh240-tanh111_5st'
+            param_te = f'rnn_500ep_test_rico_BOWsum_w_100_3dims_rnntanh240-tanh111_5st'
             # param_null = 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
 
 
@@ -411,7 +414,7 @@ if __name__ == '__main__':
             # graph_dict[param_null] = dict3
 
         for dim in range(output_dimension):
-            param_pred = f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh'
+            param_pred = f'rnn_500ep_pred_rico_BOWsum_w_100_3dims_rnntanh240-tanh111_5st'
             AFF = Atom_RNN(
                 data_path=tr_path,
                 # local atom vector path
@@ -422,6 +425,7 @@ if __name__ == '__main__':
                 # classification=True,
                 model_path=model_paths[dim],
                 save_model_path=model_paths[dim],
+                steps=numsteps,
                 # current_dim=dim,
                 # current_dim=dim,
                 # test_path=te_path,
