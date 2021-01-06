@@ -8,13 +8,17 @@ from tensorflow.keras import layers
 from keras.utils import plot_model
 from matplotlib import pyplot as plt
 
+from kerastuner.tuners import RandomSearch
+from kerastuner.tuners import BayesianOptimization
+from kerastuner.tuners import Hyperband
+
 class Atom_RNN():
 
     def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='',
                  nullset_path = '', nullset_labels_path='',
                  model_path = '', save_model_path='', trbatch_size=10, tebatch_size=1, epochs=100, curdim=0, input_size=10,
                   drop_per=0.1, units=100, output_size=1, steps=5, learn_rate=0.005, seed = 24,
-                 regression=False, classification=False):
+                 regression=False, classification=False, optimize=False):
         try:
             with open(data_path, 'rb') as data_file:
                 self.data = pickle.load(data_file)
@@ -96,22 +100,22 @@ class Atom_RNN():
 
         self.history = dict()
 
-
-        if save_model_path != '':
-            self.save_model_path = save_model_path
-        else:
-            Warning('save_model_path does not exist. Model will not save.')
-
-        if model_path != '':
-            self.model = keras.models.load_model(model_path)
-        else:
-            print('Building new model')
-            if regression:
-                self.model = self.build_regression_model()
-            elif classification:
-                self.model = self.build_classification_model()
+        if not optimize:
+            if save_model_path != '':
+                self.save_model_path = save_model_path
             else:
-                ValueError('Model is not defined.')
+                Warning('save_model_path does not exist. Model will not save.')
+
+            if model_path != '':
+                self.model = keras.models.load_model(model_path)
+            else:
+                print('Building new model')
+                if regression:
+                    self.model = self.build_regression_model()
+                elif classification:
+                    self.model = self.build_classification_model()
+                else:
+                    ValueError('Model is not defined.')
 
     def __converttomatrix(self, data, labels=False):
         X, Y = [], []
@@ -188,6 +192,8 @@ class Atom_RNN():
                 units=240,
                 input_shape=(30, self.steps),
                 # batch_size=self.batch_size,
+                kernel_initializer=winit,
+                bias_initializer=binit,
                 activation='tanh'
                 # dropout=self.drop_per,
                 # input_shape=self.input_shape
@@ -278,6 +284,113 @@ class Atom_RNN():
         keras.models.save_model(
             self.model, self.save_model_path
         )
+
+
+
+    def build_model(self, hp):
+        model = keras.Sequential()
+
+        model.add(layers.SimpleRNN(
+            hp.Int('rnn_units', min_value=30, max_value=900, step=15),
+            input_shape=(30, self.steps),
+            activation=hp.Choice('rnn_activation', values=['tanh', 'sigmoid', 'softmax'])
+        ))
+
+        for ii in range(hp.Int('num_h-layers', 1, 10)):
+            model.add(
+                layers.Dense(
+                    hp.Int(f'Dense_{ii}_units', min_value=16, max_value=1600, step=16),
+                    activation=hp.Choice(f'Dense_{ii}_activation', values=['tanh', 'sigmoid', 'softmax'])
+                )
+            )
+
+        model.add(layers.Dense(1, activation='linear'))
+
+        # keras.optimizers.SGD(learning_rate=1e-2, momentum=0, nesterov=False)
+        # keras.optimizers.Adagrad(leaning_rate=___, initial_accumulator_value=1e-1, epsilon=1e-7)
+        # keras.optimizers.Adam(learning_rate=1e-3, beta_1=0.9, beta_2=0.999, epsilon=1e-7, amsgrad=False)
+        # keras.optimizers.RMSprop(learning_rate=1e-3, rho=0.9, momentum=0.0, epsilon=1e-7, centered=False)
+        # keras.optimizers.Adadelta(learning_rate=1e-3, rho=0.95, epsilon=1e-7)
+        # keras.optimizers.Adamax(learning_rate=1e-3, beta_1=0.9, beta_2=0.999, epsilon=1e-7) may be superior with embeddings
+
+
+
+        model.compile(
+            optimizer=keras.optimizers.Adam(learning_rate=hp.Float('learning_rate',
+                                                                   min_value=1e-5,
+                                                                   max_value=1e-2,
+                                                                   sampling='LOG',
+                                                                   ),
+                                            beta_1=hp.Float('beta_1', min_value=0.7, max_value=0.95, step=5e-2),
+                                            beta_2=hp.Float('beta_2', min_value=0.99, max_value=0.9999, step=9e-4),
+
+                                            ),
+
+            loss=tf.keras.losses.mean_squared_error,
+            metrics=['mean_squared_error']
+        )
+        return model
+
+
+    def random_search(self):
+        tuner = RandomSearch(
+            self.build_model,
+            objective='val_mean_squared_error',
+            max_trials=1,
+            executions_per_trial=3,
+            # directory=dir,
+            )
+
+        tuner.search(
+            x = self.data,
+            y = self.train_labels,
+            epochs = self.epochs,
+            # batch_size = self.batch_size,
+            validation_data=(self.test_data, self.test_labels)
+
+        )
+        return tuner
+
+    def bayesian(self):
+        tuner = BayesianOptimization(
+            self.build_model,
+            objective='val_mean_squared_error',
+            max_trials=3,
+            num_initial_points=3,
+            seed=self.seed,
+            # directory=dir,
+            )
+
+        tuner.search(
+            x = self.data,
+            y = self.train_labels,
+            epochs = self.epochs,
+            # batch_size = self.batch_size,
+            validation_data=(self.test_data, self.test_labels)
+        )
+        return tuner
+
+    def hyperband(self):
+        tuner = Hyperband(
+            self.build_model,
+            objective='val_mean_squared_error',
+            max_epochs=self.epochs+10,
+            factor=3,
+            hyperband_iterations= 5, # The number of times to iterate over the full Hyperband algorithm. It is recommended to set this to as high a value as is within your resource budget.
+            # directory=dir,
+            seed=self.seed
+            )
+
+        tuner.search(
+            x = self.data,
+            y = self.train_labels,
+            epochs = self.epochs,
+            # batch_size = self.batch_size,
+            validation_data=(self.test_data, self.test_labels)
+        )
+
+        return tuner
+
 
 
 if __name__ == '__main__':

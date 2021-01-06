@@ -376,7 +376,7 @@ class Atom_FFNN:
         model.add(layers.Dense(hp.Int('input_units', min_value=16, max_value=960, step=8),
                                     input_shape=(self.dense2,),
                                     activation=hp.Choice('input_activation', values=['tanh', 'sigmoid', 'softmax']))),
-        for ii in range(hp.Int('num_h-layers', 1, 6)):
+        for ii in range(hp.Int('num_h-layers', 1, 10)):
             model.add(
                 layers.Dense(
                     hp.Int(f'Dense_{ii}_units', min_value=8, max_value=1600, step=4),
@@ -386,10 +386,26 @@ class Atom_FFNN:
 
         model.add(layers.Dense(1, activation='linear'))
 
-        sgd = keras.optimizers.SGD(learning_rate=self.learn_rate)
+        # keras.optimizers.SGD(learning_rate=1e-2, momentum=0, nesterov=False)
+        # keras.optimizers.Adagrad(leaning_rate=___, initial_accumulator_value=1e-1, epsilon=1e-7)
+        # keras.optimizers.Adam(learning_rate=1e-3, beta_1=0.9, beta_2=0.999, epsilon=1e-7, amsgrad=False)
+        # keras.optimizers.RMSprop(learning_rate=1e-3, rho=0.9, momentum=0.0, epsilon=1e-7, centered=False)
+        # keras.optimizers.Adadelta(learning_rate=1e-3, rho=0.95, epsilon=1e-7)
+        # keras.optimizers.Adamax(learning_rate=1e-3, beta_1=0.9, beta_2=0.999, epsilon=1e-7) may be superior with embeddings
+
+
 
         model.compile(
-            optimizer=sgd,
+            optimizer=keras.optimizers.Adam(learning_rate=hp.Float('learning_rate',
+                                                                   min_value=1e-5,
+                                                                   max_value=1e-2,
+                                                                   sampling='LOG',
+                                                                   ),
+                                            beta_1=hp.Float('beta_1', min_value=0.7, max_value=0.95, step=5e-2),
+                                            beta_2=hp.Float('beta_2', min_value=0.99, max_value=0.9999, step=9e-4),
+
+                                            ),
+
             loss=tf.keras.losses.mean_squared_error,
             metrics=['mean_squared_error']
 
@@ -398,13 +414,14 @@ class Atom_FFNN:
         return model
 
 
-    def random_search(self):
+    def random_search(self, dir, name):
         tuner = RandomSearch(
             self.build_model,
             objective='val_mean_squared_error',
-            max_trials=1,
-            executions_per_trial=1,
-            # directory=dir,
+            max_trials=1, # more than 2 and it crashes
+            executions_per_trial=3,
+            directory=dir,
+            project_name=name
             )
 
         tuner.search(
@@ -415,12 +432,13 @@ class Atom_FFNN:
             validation_data=(self.test_data, self.test_labels)
 
         )
+        return tuner
 
     def bayesian(self):
         tuner = BayesianOptimization(
             self.build_model,
             objective='val_mean_squared_error',
-            max_trials=3,
+            max_trials=1, # more than 2 and it crashes
             num_initial_points=3,
             seed=self.seed,
             # directory=dir,
@@ -433,6 +451,9 @@ class Atom_FFNN:
             batch_size = self.batch_size,
             validation_data=(self.test_data, self.test_labels)
         )
+
+        return tuner
+
 
     def hyperband(self):
         tuner = Hyperband(
@@ -452,6 +473,8 @@ class Atom_FFNN:
             batch_size = self.batch_size,
             validation_data=(self.test_data, self.test_labels)
         )
+
+        return tuner
 
 
 

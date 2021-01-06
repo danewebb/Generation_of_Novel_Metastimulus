@@ -15,10 +15,11 @@ te_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\
 telabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\test_labels.pkl'
 
 set_batch_size = 10
-set_epochs = 500
+set_epochs = 20
 learn_rate = 0.005
 
 LOG_DIR = f'{int(time.time())}'
+name = 'random_search'
 with tf.device('/cpu:0'):
     AFF = Atom_FFNN(
         data_path=tr_path,
@@ -35,7 +36,15 @@ with tf.device('/cpu:0'):
         optimize=True,
         seed=24
     )
-    # AFF.random_search()
-    AFF.bayesian()
-    # AFF.hyperband()
+    xtest = AFF.test_data
+    ytest = AFF.test_labels
 
+    tuner = AFF.random_search(LOG_DIR, name)
+    # tuner = AFF.bayesian()
+    # tuner = AFF.hyperband()
+
+    # tuner.search_space_summary()
+    best_model = tuner.get_best_models(num_models=1)[0]
+    loss = best_model.evaluate(xtest, ytest) # list[mse loss, mse]
+
+    print('hello world')
