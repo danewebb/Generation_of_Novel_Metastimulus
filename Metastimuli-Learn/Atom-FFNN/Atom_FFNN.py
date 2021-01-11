@@ -12,13 +12,46 @@ from kerastuner.tuners import RandomSearch
 from kerastuner.tuners import BayesianOptimization
 from kerastuner.tuners import Hyperband
 
-
+from pathlib import Path
 
 class Atom_FFNN:
     def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='',
                  model_path = '', save_model_path='', batch_size=10, epochs=100, nullset_path='', nullset_labels_path='', nullset_labels=None,
-                  drop_per=0.1, dense_out=2, dense_in=2, hidden=50, current_dim=0, learning_rate=0.001, seed=24,
-                 regression=False, classification=False, normalize=False, optimize=False):
+                 drop_per=0.1, dense_out=2, dense_in=2, hidden=50, current_dim=0, learning_rate=0.001, seed=24,
+                 regression=False, classification=False, optimize=False,
+                 input_min=8, input_max=800, input_step=8, hid_min=8, hid_max=1600, hid_step=8,
+                 min_hlayers=1, max_hlayers=10,
+                 learn_rate_min=1e-5, learn_rate_max=1e-2, beta1_min=0.7, beta1_max=0.95, beta1_step=5e-2,
+                 beta2_min=0.99, beta2_max=0.999, beta2_step=9e-4, momentum_min=0, momentum_max=1, momentum_step=0.1,
+                 initial_acc_min=1e-2, initial_acc_max=5e-1, initial_acc_step=1e-2, epsilon_min=1e-5, epsilon_max=1e-9, epsilon_step=1e-9,
+                 rho_min=0.5, rho_max=0.95, rho_step=0.05,
+                 max_trials=1, max_executions_per=1, initial_points=5, hyper_maxepochs=100, hyper_factor=3, hyper_iters=10,
+                 optimizer='sgd',
+
+                 ):
+
+        self.input_min = input_min
+        self.input_max = input_max
+        self.input_step = input_step
+        self.hid_min = hid_min
+        self.hid_max = hid_max
+        self.hid_step = hid_step
+        self.min_hlayers = min_hlayers
+        self.max_hlayers = max_hlayers
+        self.learn_rate_min = learn_rate_min; self.learn_rate_max = learn_rate_max
+        self.beta1_min = beta1_min; self.beta1_max = beta1_max; self.beta1_step = beta1_step
+        self.beta2_min = beta2_min; self.beta2_max = beta2_max; self.beta2_step = beta2_step
+        self.momentum_min = momentum_min; self.momentum_max = momentum_max; self.momentum_step = momentum_step
+        self.initial_acc_min = initial_acc_min; self.initial_acc_max = initial_acc_max
+        self.initial_acc_step = initial_acc_step; self.epsilon_min = epsilon_min
+        self.epsilon_max = epsilon_max; self.epsilon_step = epsilon_step
+        self.rho_min =rho_min; self.rho_max = rho_max; self.rho_step = rho_step
+
+        self.max_trials = max_trials; self.max_executions_per = max_executions_per
+        self.initial_points = initial_points; self.hyper_maxepochs = hyper_maxepochs
+        self.hyper_factor = hyper_factor; self.hyper_iters=hyper_iters
+
+        self.optimizer = optimizer
 
 
         try:
@@ -109,12 +142,6 @@ class Atom_FFNN:
                     ValueError('Model is not defined.')
 
 
-
-
-
-        if normalize:
-            self.train_labels, self.test_labels, self.nullset_labels = self.norm_all(
-                self.train_labels, self.test_labels, self.nullset_labels)
 
 
         self.nullset_labels = self.splice_labels(self.nullset_labels, self.current_dim)
@@ -371,15 +398,17 @@ class Atom_FFNN:
         return regress_graph_dict
 
     def build_model(self, hp):
+
+
         model = keras.Sequential()
 
-        model.add(layers.Dense(hp.Int('input_units', min_value=16, max_value=960, step=8),
+        model.add(layers.Dense(hp.Int('input_units', min_value=self.input_min, max_value=self.input_max, step=self.input_step),
                                     input_shape=(self.dense2,),
                                     activation=hp.Choice('input_activation', values=['tanh', 'sigmoid', 'softmax']))),
-        for ii in range(hp.Int('num_h-layers', 1, 10)):
+        for ii in range(hp.Int('num_h-layers', self.min_hlayers, self.max_hlayers)):
             model.add(
                 layers.Dense(
-                    hp.Int(f'Dense_{ii}_units', min_value=8, max_value=1600, step=4),
+                    hp.Int(f'Dense_{ii}_units', min_value=self.hid_min, max_value=self.hid_max, step=self.hid_step),
                            activation=hp.Choice(f'Dense_{ii}_activation', values=['tanh', 'sigmoid', 'softmax'])
                 )
             )
@@ -394,34 +423,95 @@ class Atom_FFNN:
         # keras.optimizers.Adamax(learning_rate=1e-3, beta_1=0.9, beta_2=0.999, epsilon=1e-7) may be superior with embeddings
 
 
+        model = self.optim_choice(hp, model)
 
-        model.compile(
-            optimizer=keras.optimizers.Adam(learning_rate=hp.Float('learning_rate',
-                                                                   min_value=1e-5,
-                                                                   max_value=1e-2,
-                                                                   sampling='LOG',
-                                                                   ),
-                                            beta_1=hp.Float('beta_1', min_value=0.7, max_value=0.95, step=5e-2),
-                                            beta_2=hp.Float('beta_2', min_value=0.99, max_value=0.9999, step=9e-4),
 
-                                            ),
 
-            loss=tf.keras.losses.mean_squared_error,
-            metrics=['mean_squared_error']
 
-        )
+        return model
+
+    def optim_choice(self, hp, model):
+        self.optimizer = self.optimizer.lower()
+
+
+        if self.optimizer == 'sgd':
+            model.compile(
+                optimizer=keras.optimizers.SGD(
+                    learning_rate=hp.Float('learning_rate',
+                                           min_value=self.learn_rate_min, max_value=self.learn_rate_max,
+                                           sampling='LOG'),
+                    momentum=hp.Float('momentum', min_value=self.momentum_min, max_value=self.momentum_max, step=self.momentum_step)),
+                loss=tf.keras.losses.mean_squared_error,
+                metrics=['mean_squared_error'])
+
+        elif self.optimizer == 'adam':
+            model.compile(
+                optimizer=keras.optimizers.Adam(
+                    learning_rate=hp.Float('learning_rate',
+                                           min_value=self.learn_rate_min, max_value=self.learn_rate_max, sampling='LOG'),
+                    beta_1=hp.Float('beta_1', min_value=self.beta1_min, max_value=self.beta1_max, step=self.beta1_step),
+                    beta_2=hp.Float('beta_2', min_value=self.beta2_min, max_value=self.beta2_max, step=self.beta2_step)),
+                loss=tf.keras.losses.mean_squared_error,
+                metrics=['mean_squared_error'])
+
+        elif self.optimizer == 'adagrad':
+            model.compile(
+                optimizer=keras.optimizers.Adagrad(
+                    learning_rate=hp.Float('learning_rate',
+                                           min_value=self.learn_rate_min, max_value=self.learn_rate_max, sampling='LOG'),
+                    initial_accumulator_value=hp.Float('initial_accumulator', min_value=self.initial_acc_min, max_value=self.initial_acc_max, step=self.initial_acc_step),
+                    epsilon=hp.Float('epsilon', min_value=self.epsilon_min, max_value=self.epsilon_max, step=self.epsilon_step)),
+                loss=tf.keras.losses.mean_squared_error,
+                metrics=['mean_squared_error'])
+
+        elif self.optimizer == 'rmsprop':
+            model.compile(
+                optimizer=keras.optimizers.RMSprop(
+                    learning_rate=hp.Float('learning_rate',
+                                           min_value=self.learn_rate_min, max_value=self.learn_rate_max, sampling='LOG'),
+                    rho=hp.Float('rho', min_value=self.rho_min, max_value=self.rho_max, step=self.rho_step),
+                    momentum=hp.Float('momentum', min_value=self.momentum_min, max_value=self.momentum_max, step=self.momentum_step),
+                    epsilon=hp.Float('epsilon', min_value=self.epsilon_min, max_value=self.epsilon_max, step=self.epsilon_step)
+                ),
+                loss=tf.keras.losses.mean_squared_error,
+                metrics=['mean_squared_error'])
+
+        elif self.optimizer == 'adadelta':
+            model.compile(
+                optimizer=keras.optimizers.Adadelta(
+                    learning_rate=hp.Float('learning_rate',
+                                           min_value=self.learn_rate_min, max_value=self.learn_rate_max, sampling='LOG'),
+                    rho=hp.Float('rho', min_value=self.rho_min, max_value=self.rho_max, step=self.rho_step),
+                    epsilon=hp.Float('epsilon', min_value=self.epsilon_min, max_value=self.epsilon_max, step=self.epsilon_step)
+                ),
+                loss=tf.keras.losses.mean_squared_error,
+                metrics=['mean_squared_error'])
+
+        elif self.optimizer == 'adamax':
+            model.compile(
+                optimizer=keras.optimizers.Adamax(
+                    learning_rate=hp.Float('learning_rate',
+                                           min_value=self.learn_rate_min, max_value=self.learn_rate_max, sampling='LOG'),
+                    beta_1=hp.Float('beta_1', min_value=self.beta1_min, max_value=self.beta1_max, step=self.beta1_step),
+                    beta_2=hp.Float('beta_2', min_value=self.beta2_min, max_value=self.beta2_max, step=self.beta2_step),
+                    epsilon=hp.Float('epsilon', min_value=self.epsilon_min, max_value=self.epsilon_max, step=self.epsilon_step)),
+                loss=tf.keras.losses.mean_squared_error,
+                metrics=['mean_squared_error'])
+
+        else:
+            raise NameError('Optimizer input is not valid.')
 
         return model
 
 
-    def random_search(self, dir, name):
+    def random_search(self):
         tuner = RandomSearch(
             self.build_model,
             objective='val_mean_squared_error',
-            max_trials=1, # more than 2 and it crashes
-            executions_per_trial=3,
-            directory=dir,
-            project_name=name
+            max_trials=self.max_trials, # more than 2 and it crashes
+            executions_per_trial=self.max_executions_per,
+            # directory=dir,
+            # project_name=name
             )
 
         tuner.search(
@@ -438,8 +528,8 @@ class Atom_FFNN:
         tuner = BayesianOptimization(
             self.build_model,
             objective='val_mean_squared_error',
-            max_trials=1, # more than 2 and it crashes
-            num_initial_points=3,
+            max_trials=self.max_trials, # more than 2 and it crashes
+            num_initial_points=self.initial_points,
             seed=self.seed,
             # directory=dir,
             )
@@ -459,9 +549,9 @@ class Atom_FFNN:
         tuner = Hyperband(
             self.build_model,
             objective='val_mean_squared_error',
-            max_epochs=self.epochs+10,
-            factor=3,
-            hyperband_iterations= 5, # The number of times to iterate over the full Hyperband algorithm. It is recommended to set this to as high a value as is within your resource budget.
+            max_epochs=self.hyper_maxepochs,
+            factor=self.hyper_factor,
+            hyperband_iterations= self.hyper_iters, # The number of times to iterate over the full Hyperband algorithm. It is recommended to set this to as high a value as is within your resource budget.
             # directory=dir,
             seed=self.seed
             )
@@ -486,23 +576,23 @@ if __name__ == '__main__':
         learn_rate = 0.005
         # curdim = 0
         model_paths = [
-            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_00',
-            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_01',
-            r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_02',
-            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_03',
-            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_04',
-            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_05',
-            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_06',
-            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_07',
-            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_08',
-            #     r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_09',
+            Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_00'),
+            Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_01'),
+            Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_02'),
+            #     Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_03'),
+            #     Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_04'),
+            #     Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_05'),
+            #     Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_06'),
+            #     Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_07'),
+            #     Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_08'),
+            #     Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_09'),
         ]
 
-        tr_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train.pkl'
-        trlabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train_labels.pkl'
+        tr_path = Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train.pkl')
+        trlabels_path = Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train_labels.pkl')
 
-        te_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\test.pkl'
-        telabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\test_labels.pkl'
+        te_path = Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\test.pkl')
+        telabels_path = Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\test_labels.pkl')
 
         output_dimension = len(model_paths)
         for dim in range(output_dimension):
@@ -526,7 +616,7 @@ if __name__ == '__main__':
                 hidden=300,
                 dense_in=30,
                 drop_per=.1,
-                normalize=False
+
             )
 
             AFF.save_model()
@@ -566,7 +656,7 @@ if __name__ == '__main__':
                 hidden=300,
                 dense_in=30,
                 drop_per=.1,
-                normalize=False
+
             )
             for ii in range(epochs):
                 print(f'Epoch: {ii}')
@@ -607,7 +697,7 @@ if __name__ == '__main__':
         #
         #
         with open(
-                r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl',
+                Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl'),
                 'rb') as f10:
             graph_dict = pickle.load(f10)
         # graph_dict = dict()
@@ -669,7 +759,7 @@ if __name__ == '__main__':
         graph_dict[param_pred] = dict4
 
         with open(
-                r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl',
+                Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl'),
                 'wb') as f11:
             pickle.dump(graph_dict, f11)
 

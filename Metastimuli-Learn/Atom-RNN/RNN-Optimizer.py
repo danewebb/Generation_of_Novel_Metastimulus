@@ -15,7 +15,7 @@ te_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\
 telabels_path = r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\test_labels.pkl'
 
 set_batch_size = 10
-set_epochs = 100
+set_epochs = 20
 learn_rate = 0.005
 numsteps=5 # metaparameter
 
