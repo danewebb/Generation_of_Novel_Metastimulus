@@ -604,7 +604,7 @@ if __name__ == '__main__':
                 regression=True,
                 # classification=True,
                 # model_path=model_paths[dim],
-                save_model_path=model_paths[dim],
+                # save_model_path=model_paths[dim],
                 current_dim=dim,
                 # current_dim=curdim,
                 test_path=te_path,
