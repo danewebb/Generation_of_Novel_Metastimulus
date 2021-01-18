@@ -16,6 +16,7 @@ from pathlib import Path
 
 class Atom_FFNN:
     def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='',
+                 data=None, train_labels=None, test=None, test_labels=None,
                  model_path = '', save_model_path='', batch_size=10, epochs=100, nullset_path='', nullset_labels_path='', nullset_labels=None,
                  drop_per=0.1, dense_out=2, dense_in=2, hidden=50, current_dim=0, learning_rate=0.001, seed=24,
                  regression=False, classification=False, optimize=False,
@@ -53,17 +54,19 @@ class Atom_FFNN:
 
         self.optimizer = optimizer
 
+        if data_path != '':
+            try:
+                with open(data_path, 'rb') as data_file:
+                    self.data = pickle.load(data_file)
+            except ValueError:
+                print('Data path does not exist')
 
-        try:
-            with open(data_path, 'rb') as data_file:
-                self.data = pickle.load(data_file)
-        except ValueError:
-            print('Data path does not exist')
-
-        if not isinstance(self.data, np.ndarray):
-            self.data = self.data_to_numpy(self.data, dense_out)
+            if not isinstance(self.data, np.ndarray):
+                self.data = self.data_to_numpy(self.data, dense_out)
+            else:
+                TypeError('data should be either ndarray or list')
         else:
-            TypeError('data should be either ndarray or list')
+            self.data = data
 
         self.learn_rate = learning_rate
         self.current_dim = current_dim
@@ -107,6 +110,9 @@ class Atom_FFNN:
                 self.test_labels = pickle.load(test_label_file)
             if not isinstance(self.test_labels, np.ndarray):
                 self.test_labels = self.data_to_numpy(self.test_labels, dense_out)
+        else:
+            self.test_data = test
+            self.test_labels = test_labels
 
 
 
@@ -117,6 +123,8 @@ class Atom_FFNN:
                 self.train_labels = pickle.load(train_label_file)
             if not isinstance(self.train_labels, (np.ndarray)):
                 self.train_labels = self.data_to_numpy(self.train_labels, dense_out)
+        else:
+            self.train_labels = train_labels
 
 
 
