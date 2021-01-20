@@ -19,6 +19,10 @@ import tensorflow as tf
 from tensorflow import keras
 import keras.layers as layers
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+
 class Learn_Master():
     """
 
@@ -71,7 +75,7 @@ class Learn_Master():
         #     self.label_pairing()
 
 
-        self.we_models = we_model_paths
+        self.we_models = we_models
 
 
         self.mindiff = mindiff
@@ -106,18 +110,20 @@ class Learn_Master():
         """
 
         from Weighting_Keywords import Weighting_Keyword
-        if objectives[0, 0] == 0:
+        if objectives[0, 1] != 4:
             # rico WE
             voc = self.vocab[0]
             enc = self.ordered_encdata[0]
+
         else:
             # sciart
             voc = self.vocab[1]
             enc = self.ordered_encdata[1]
 
-
         input_dimension = self.input_dims[objectives[0, 1]]
         we_model = keras.models.load_model(self.we_models[objectives[0, 1]])
+
+
 
         output_dimension = self.output_dims[objectives[0, 2]]
         labels = self.ordered_labels[objectives[0, 2]]
@@ -194,10 +200,10 @@ class Learn_Master():
         with tf.device('/cpu:0'):
             AFF = Atom_FFNN(
                 data=self.train,
-                train_label_path=self.train_labels,
-                test_path=self.test,
-                test_label_path=self.test_labels,
-                nullset_path=self.test,
+                train_labels=self.train_labels,
+                test=self.test,
+                test_labels=self.test_labels,
+                nullset=self.test,
                 # batch_size=set_batch_size,
                 # epochs=set_epochs,
                 # learning_rate=learn_rate,
@@ -206,26 +212,40 @@ class Learn_Master():
                 current_dim=curout_dim,
                 optimize=True,
                 seed=24,
-                optimizer=optimizer
+                optimizer=optimizer,
+
+                epochs=1,
+                initial_points=3,
+                hyper_maxepochs=1,
+                hyper_iters=1
             )
             xtest = AFF.test_data
             ytest = AFF.test_labels
 
             tuner_rand = AFF.random_search()
-            tuner_bayes = AFF.bayesian()
-            tuner_hyper = AFF.hyperband()
-
-            # tuner.search_space_summary()
             best_model_rand = tuner_rand.get_best_models(num_models=1)[0]
             loss_rand = best_model_rand.evaluate(xtest, ytest)  # list[mse loss, mse]
+            print('Completed random search\n')
 
+            tuner_bayes = AFF.bayesian()
             best_model_bayes = tuner_bayes.get_best_models(num_models=1)[0]
             loss_bayes = best_model_bayes.evaluate(xtest, ytest)  # list[mse loss, mse]
+            print('Completed bayesian\n')
 
+            tuner_hyper = AFF.hyperband()
             best_model_hyper = tuner_hyper.get_best_models(num_models=1)[0]
             loss_hyper = best_model_hyper.evaluate(xtest, ytest)  # list[mse loss, mse]
+            print('Completed hyperband\n')
+
+            # tuner.search_space_summary()
+
+
+
+
+
 
             loss = [loss_rand[0], loss_bayes[0], loss_hyper[0]]
+            # loss= [loss_bayes[0], loss_hyper[0]]
             minloss = min(loss)
         return minloss
 
@@ -284,6 +304,7 @@ class Learn_Master():
         for ii in range(self.nvar):
             obj[0, ii] = np.random.randint(self.lb[ii], self.ub[ii])
 
+
         objold = np.zeros((1, self.nvar), dtype='int32')
         objnew = np.zeros((1, self.nvar), dtype='int32')
         mu = self.mu0
@@ -314,6 +335,7 @@ class Learn_Master():
             # check if any of the exploratory points have lower fitness
             for ii in range(1, self.nvar):
                 self.build_objdataset(mesh[ii, :])
+
                 meshfit = self.ff_fitness(
                     self.input_dims[mesh[ii, 1]],
                     self.curout_dim,
@@ -348,6 +370,7 @@ class Learn_Master():
 
                     for ii in range(1, self.nvar):
                         self.build_objdataset(mesh[ii, :])
+
                         meshfit = self.ff_fitness(
                             self.input_dims[mesh[ii, 1]],
                             self.curout_dim,

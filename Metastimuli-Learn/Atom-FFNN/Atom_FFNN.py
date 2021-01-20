@@ -1,4 +1,5 @@
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import pickle
 import numpy as np
 import json
@@ -16,7 +17,7 @@ from pathlib import Path
 
 class Atom_FFNN:
     def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='',
-                 data=None, train_labels=None, test=None, test_labels=None,
+                 data=None, train_labels=None, test=None, test_labels=None, nullset=None,
                  model_path = '', save_model_path='', batch_size=10, epochs=100, nullset_path='', nullset_labels_path='', nullset_labels=None,
                  drop_per=0.1, dense_out=2, dense_in=2, hidden=50, current_dim=0, learning_rate=0.001, seed=24,
                  regression=False, classification=False, optimize=False,
@@ -92,7 +93,18 @@ class Atom_FFNN:
                     self.nullset_labels = self.data_to_numpy(self.nullset_labels, dense_out)
             except:
                 self.nullset_labels = nullset_labels
-
+        else:
+            self.nullset = nullset
+            if nullset_labels_path != '':
+                try:
+                    with open(nullset_labels_path, 'rb') as null_labels_file:
+                        self.nullset_labels = pickle.load(null_labels_file)
+                    if not isinstance(self.nullset_labels, np.ndarray):
+                        self.nullset_labels = self.data_to_numpy(self.nullset_labels, dense_out)
+                except:
+                    self.nullset_labels = nullset_labels
+            else:
+                self.nullset_labels = nullset_labels
 
 
 
@@ -515,9 +527,10 @@ class Atom_FFNN:
     def random_search(self):
         tuner = RandomSearch(
             self.build_model,
-            objective='val_mean_squared_error',
-            max_trials=self.max_trials, # more than 2 and it crashes
-            executions_per_trial=self.max_executions_per,
+            'mean_squared_error',
+            self.max_trials, # more than 2 and it crashes
+            overwrite=True,
+            # executions_per_trial=self.max_executions_per,
             # directory=dir,
             # project_name=name
             )
@@ -527,7 +540,8 @@ class Atom_FFNN:
             y = self.train_labels,
             epochs = self.epochs,
             batch_size = self.batch_size,
-            validation_data=(self.test_data, self.test_labels)
+            validation_data=(self.test_data, self.test_labels),
+
 
         )
         return tuner
@@ -535,10 +549,11 @@ class Atom_FFNN:
     def bayesian(self):
         tuner = BayesianOptimization(
             self.build_model,
-            objective='val_mean_squared_error',
+            objective='mean_squared_error',
             max_trials=self.max_trials, # more than 2 and it crashes
             num_initial_points=self.initial_points,
             seed=self.seed,
+            overwrite=True,
             # directory=dir,
             )
 
@@ -547,7 +562,8 @@ class Atom_FFNN:
             y = self.train_labels,
             epochs = self.epochs,
             batch_size = self.batch_size,
-            validation_data=(self.test_data, self.test_labels)
+            validation_data=(self.test_data, self.test_labels),
+
         )
 
         return tuner
@@ -556,12 +572,13 @@ class Atom_FFNN:
     def hyperband(self):
         tuner = Hyperband(
             self.build_model,
-            objective='val_mean_squared_error',
+            objective='mean_squared_error',
             max_epochs=self.hyper_maxepochs,
             factor=self.hyper_factor,
             hyperband_iterations= self.hyper_iters, # The number of times to iterate over the full Hyperband algorithm. It is recommended to set this to as high a value as is within your resource budget.
             # directory=dir,
-            seed=self.seed
+            seed=self.seed,
+            overwrite = True,
             )
 
         tuner.search(
@@ -569,7 +586,8 @@ class Atom_FFNN:
             y = self.train_labels,
             epochs = self.epochs,
             batch_size = self.batch_size,
-            validation_data=(self.test_data, self.test_labels)
+            validation_data=(self.test_data, self.test_labels),
+
         )
 
         return tuner
