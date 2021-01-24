@@ -25,7 +25,7 @@ class Atom_FFNN:
                  min_hlayers=1, max_hlayers=10,
                  learn_rate_min=1e-5, learn_rate_max=1e-2, beta1_min=0.7, beta1_max=0.95, beta1_step=5e-2,
                  beta2_min=0.99, beta2_max=0.999, beta2_step=9e-4, momentum_min=0, momentum_max=1, momentum_step=0.1,
-                 initial_acc_min=1e-2, initial_acc_max=5e-1, initial_acc_step=1e-2, epsilon_min=1e-5, epsilon_max=1e-9, epsilon_step=1e-9,
+                 initial_acc_min=1e-2, initial_acc_max=5e-1, initial_acc_step=1e-2, epsilon_min=1e-9, epsilon_max=1e-5, epsilon_step=1e-9,
                  rho_min=0.5, rho_max=0.95, rho_step=0.05,
                  max_trials=1, max_executions_per=1, initial_points=5, hyper_maxepochs=100, hyper_factor=3, hyper_iters=10,
                  optimizer='sgd',
@@ -527,23 +527,25 @@ class Atom_FFNN:
     def random_search(self):
         tuner = RandomSearch(
             self.build_model,
-            'mean_squared_error',
+            'val_mean_squared_error',
             self.max_trials, # more than 2 and it crashes
             overwrite=True,
             # executions_per_trial=self.max_executions_per,
             # directory=dir,
             # project_name=name
             )
-
+        # try:
         tuner.search(
             x = self.data,
             y = self.train_labels,
             epochs = self.epochs,
             batch_size = self.batch_size,
-            validation_data=(self.test_data, self.test_labels),
+            validation_data=(self.test_data, self.test_labels)
+    )
+        # except ValueError:
+        #     print('error')
 
 
-        )
         return tuner
 
     def bayesian(self):

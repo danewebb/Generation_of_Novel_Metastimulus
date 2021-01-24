@@ -28,24 +28,25 @@ class Learn_Master():
 
     """
     def __init__(self, dataset_dict, vocab, ordered_encdata, ordered_labels, ints, input_dims, we_models, output_dims, keyword_weight_factor,
-                 optimizers, atom_methods, nn_architectures,
+                 optimizers, atom_methods, nn_architectures, hyperoptimizers,
                  NN_prebuilt_model=None, NNclasse=None,
                  WE_classes=None, vocab_save_path='', data_save_path='',
                  projection=None, adjacency=None, curout_dim=0,
 
-                 nvar=10, maxiter=100, mindiff=1e-6, mu0=4, alpha=1e-1, delta=20,
+                 nvar=10, maxiter=100, mindiff=1e-6, mu0=4, alpha=1e-1, delta=4,
                  ):
         """
         let us assume dataset is already created and encoded.
 
-        objectives = [rico / sciart, input dims / model, output dims / labels,
-              key weight, atom method, optimizer, NN arch]
+        objectives = [_, input dims / model, output dims / labels,
+              key weight, atom method, optimizer, NN arch, hyperoptimizers]
         """
 
 
 
-        self.lb = [0, 0, 0, 0, 0, 0, 0]
-        self.ub = [2, len(input_dims), len(output_dims), len(keyword_weight_factor), len(atom_methods), len(optimizers), len(nn_architectures)]
+        self.lb = [0, 0, 0, 0, 0, 0, 0, 0]
+        self.ub = [2, len(input_dims), len(output_dims), len(keyword_weight_factor),
+                   len(atom_methods), len(optimizers), len(nn_architectures), len(hyperoptimizers)]
         if len(self.lb) != len(self.ub):
             raise ValueError('lb and ub must be the same lengths')
 
@@ -64,9 +65,9 @@ class Learn_Master():
         self.optimizers = optimizers
         self.nn_architectures = nn_architectures
         self.atom_methods = atom_methods
-
+        self.hyperoptimizers = hyperoptimizers
         self.alpha = alpha
-        self.delta = mu0/delta
+        self.delta = delta
         # if adjacency is not None:
         #     self.adj = adjacency
         # if projection is not None:
@@ -110,33 +111,53 @@ class Learn_Master():
         """
 
         from Weighting_Keywords import Weighting_Keyword
-        if objectives[0, 1] != 4:
+        if objectives.ndim == 1:
+            obj = objectives.astype(int)
+            obj = np.reshape(obj, (1, len(obj)))
+        else:
+            obj = objectives
+
+        if obj[0, 1] == 4:
+            # sciart
+            voc = self.vocab[1]
+            enc = self.ordered_encdata[1]
+        else:
             # rico WE
             voc = self.vocab[0]
             enc = self.ordered_encdata[0]
 
-        else:
-            # sciart
-            voc = self.vocab[1]
-            enc = self.ordered_encdata[1]
 
-        input_dimension = self.input_dims[objectives[0, 1]]
-        we_model = keras.models.load_model(self.we_models[objectives[0, 1]])
+        input_dimension = self.input_dims[obj[0, 1]]
+        we_model = keras.models.load_model(self.we_models[obj[0, 1]])
 
+        output_dimension = self.output_dims[obj[0, 2]]
+        labels = self.ordered_labels[obj[0, 2]]
 
+        encoded, nlabels = self.eliminate_empties(enc, labels)
 
-        output_dimension = self.output_dims[objectives[0, 2]]
-        labels = self.ordered_labels[objectives[0, 2]]
+        key_weight = self.keyword_weigth_factor[obj[0, 3]]
 
-        key_weight = self.keyword_weigth_factor[objectives[0, 3]]
+        atom_method = self.atom_methods[obj[0, 4]]
 
-        atom_method = self.atom_methods[objectives[0, 4]]
+        atom_vecs = self.atom_embedding(atom_method, we_model, voc, key_weight, encoded)
+        self.split_shuff(atom_vecs, nlabels, input_dimension)
 
-        atom_vecs = self.atom_embedding(atom_method, we_model, voc, key_weight, enc)
-        self.split_shuff(atom_vecs, labels, input_dimension)
+        return obj
 
 
+    def eliminate_empties(self, enc, labs):
+        # just eliminates empty paragraphs and their labels
+        atoms = []
+        labels = []
+        for para, lab in zip(enc, labs):
+            if para == [0] or para == [] or para == None:
+                pass
 
+            else:
+                atoms.append(para)
+                labels.append(lab)
+
+        return atoms, labels
 
 
     def atom_embedding(self, atom_embed_method, we_model, vocab, key_weight, ordered_encdata, ndel=8):
@@ -151,29 +172,30 @@ class Learn_Master():
 
 
         if atom_embed_method == 'sum_atoms':
-            for para in ordered_encdata:
+            for ii, para in enumerate(ordered_encdata):
                 if para:
                     weights = WK.keyword_search(para)
                     atom_vecs.append(AE.sum_atoms(para, weights=weights))
                 else:
-                    para = [0]
-                    atom_vecs.append(AE.sum_atoms(para))
+
+                    p = [np.random.randint(0, len(vocab)), np.random.randint(0, len(vocab)), np.random.randint(0, len(vocab))]
+                    atom_vecs.append(AE.sum_atoms(p))
         elif atom_embed_method == 'avg_atoms':
-            for para in ordered_encdata:
+            for ii, para in enumerate(ordered_encdata):
                 if para:
                     weights = WK.keyword_search(para)
                     atom_vecs.append(AE.avg_atoms(para, weights=weights))
                 else:
-                    para = [0]
-                    atom_vecs.append(AE.avg_atoms(para))
+                    p = [np.random.randint(0, len(vocab)), np.random.randint(0, len(vocab)), np.random.randint(0, len(vocab))]
+                    atom_vecs.append(AE.avg_atoms(p))
         elif atom_embed_method == 'ndelta':
-            for para in ordered_encdata:
+            for ii, para in enumerate(ordered_encdata):
                 if para:
                     weights = WK.keyword_search(para)
                     atom_vecs.append(AE.sum_of_ndelta(para, ndel, weights=weights))
                 else:
-                    para = [0]
-                    atom_vecs.append(AE.sum_of_ndelta(para, ndel))
+                    p = [np.random.randint(0, len(vocab)), np.random.randint(0, len(vocab)), np.random.randint(0, len(vocab))]
+                    atom_vecs.append(AE.sum_of_ndelta(p, ndel))
 
     #     elif atom_embed_method == 'SIF'
 
@@ -195,7 +217,7 @@ class Learn_Master():
 
 
 
-    def ff_fitness(self, input_dim, curout_dim, optimizer='sgd'):
+    def ff_fitness(self, input_dim, curout_dim, optimizer='sgd', hyperoptimizer='random'):
 
         with tf.device('/cpu:0'):
             AFF = Atom_FFNN(
@@ -222,32 +244,31 @@ class Learn_Master():
             xtest = AFF.test_data
             ytest = AFF.test_labels
 
-            tuner_rand = AFF.random_search()
-            best_model_rand = tuner_rand.get_best_models(num_models=1)[0]
-            loss_rand = best_model_rand.evaluate(xtest, ytest)  # list[mse loss, mse]
-            print('Completed random search\n')
-
-            tuner_bayes = AFF.bayesian()
-            best_model_bayes = tuner_bayes.get_best_models(num_models=1)[0]
-            loss_bayes = best_model_bayes.evaluate(xtest, ytest)  # list[mse loss, mse]
-            print('Completed bayesian\n')
-
-            tuner_hyper = AFF.hyperband()
-            best_model_hyper = tuner_hyper.get_best_models(num_models=1)[0]
-            loss_hyper = best_model_hyper.evaluate(xtest, ytest)  # list[mse loss, mse]
-            print('Completed hyperband\n')
+            if hyperoptimizer == 'random':
+                tuner = AFF.random_search()
+                best_model = tuner.get_best_models(num_models=1)[0]
+                loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
+                print('Completed random search\n')
+            elif hyperoptimizer == 'bayes':
+                tuner = AFF.bayesian()
+                best_model = tuner.get_best_models(num_models=1)[0]
+                loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
+                print('Completed bayesian\n')
+            elif hyperoptimizer == 'hyper':
+                tuner = AFF.hyperband()
+                best_model = tuner.get_best_models(num_models=1)[0]
+                loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
+                print('Completed hyperband\n')
 
             # tuner.search_space_summary()
 
 
-
-
-
-
-            loss = [loss_rand[0], loss_bayes[0], loss_hyper[0]]
-            # loss= [loss_bayes[0], loss_hyper[0]]
-            minloss = min(loss)
-        return minloss
+            # loss = [loss_rand[0], loss_bayes[0], loss_hyper[0]]
+            # # loss= [loss_bayes[0], loss_hyper[0]]
+            # idxloss = loss.index(min(loss))
+            # minloss = min(loss)
+            # if idxloss == 0:
+        return loss[0], best_model, tuner
 
 
 
@@ -274,7 +295,7 @@ class Learn_Master():
 
     def intcons(self, x):
         xnew = x
-        for ii in range(x.shape[1]):
+        for ii in range(x.shape[0]):
             for int_idx in self.ints:
                 xnew[ii, int_idx] = round(x[ii, int_idx])
                 if xnew[ii, int_idx] < self.lb[int_idx]:
@@ -282,17 +303,17 @@ class Learn_Master():
                 elif xnew[ii, int_idx] > self.ub[int_idx]:
                     xnew[ii, int_idx] = self.ub[int_idx]
 
-        return xnew
+        return xnew.astype(int)
 
 
     def enforce_bounds(self, x):
         xnew = np.zeros(x.shape)
-        for ii in range(x.shape[1]):
-            for jj in range(x.shape[0]):
+        for jj in range(x.shape[1]):
+            for ii in range(x.shape[0]):
                 if x[ii, jj] < self.lb[jj]:
                     xnew[ii, jj] = self.lb[jj]
-                elif x[ii, jj] > self.ub[jj]:
-                    xnew[ii, jj] = self.ub[jj]
+                elif x[ii, jj] >= self.ub[jj]:
+                    xnew[ii, jj] = self.ub[jj]-1
                 else:
                     xnew[ii, jj] = x[ii, jj]
 
@@ -314,10 +335,11 @@ class Learn_Master():
 
         self.build_objdataset(obj)
 
-        curfit = self.ff_fitness(
+        curfit, best_model, best_tuner = self.ff_fitness(
             self.input_dims[obj[0, 1]],
             self.curout_dim,
-            optimizer=self.optimizers[obj[0, 5]]
+            optimizer=self.optimizers[obj[0, 5]],
+            hyperoptimizer=self.hyperoptimizers[obj[0, 7]]
         )
 
 
@@ -327,6 +349,8 @@ class Learn_Master():
 
         while iter < self.maxiter:
             #  and diff > self.mindiff:
+            if iter % 10:
+                print(f'Begin iteration {iter}')
             changeflag = 0
             mesh = self.make_mesh(obj)
             mesh = self.enforce_bounds(mesh)
@@ -334,17 +358,21 @@ class Learn_Master():
 
             # check if any of the exploratory points have lower fitness
             for ii in range(1, self.nvar):
-                self.build_objdataset(mesh[ii, :])
-
-                meshfit = self.ff_fitness(
+                mesh[ii, :] = self.build_objdataset(mesh[ii, :])
+                print(mesh[ii, :])
+                meshfit, meshmod, tuner = self.ff_fitness(
                     self.input_dims[mesh[ii, 1]],
                     self.curout_dim,
-                    optimizer=self.optimizers[mesh[ii, 5]]
+                    optimizer=self.optimizers[mesh[ii, 5]],
+                    hyperoptimizer=self.hyperoptimizers[mesh[ii, 7]]
                 )
 
                 if meshfit < curfit:
                     curfit = meshfit
                     objnew = mesh[ii, :]
+                    objnew = np.reshape(objnew, (1,len(objnew)))
+                    best_model = meshmod
+                    best_tuner = tuner
                     changeflag = 1
 
 
@@ -359,10 +387,11 @@ class Learn_Master():
                     objnew = self.intcons(objnew)
                     self.build_objdataset(objnew)
 
-                    newfit = self.ff_fitness(
+                    newfit, _, _ = self.ff_fitness(
                         self.input_dims[objnew[0, 1]],
                         self.curout_dim,
-                        optimizer=self.optimizers[objnew[0, 5]]
+                        optimizer=self.optimizers[objnew[0, 5]],
+                        hyperoptimizer=self.hyperoptimizers[objnew[0, 7]]
                     )
                     mesh = self.make_mesh(objnew)
                     mesh = self.enforce_bounds(mesh)
@@ -371,15 +400,18 @@ class Learn_Master():
                     for ii in range(1, self.nvar):
                         self.build_objdataset(mesh[ii, :])
 
-                        meshfit = self.ff_fitness(
+                        meshfit, meshmod, tuner = self.ff_fitness(
                             self.input_dims[mesh[ii, 1]],
                             self.curout_dim,
-                            optimizer=self.optimizers[mesh[ii, 5]]
+                            optimizer=self.optimizers[mesh[ii, 5]],
+                            hyperoptimizer=self.hyperoptimizers[mesh[ii, 7]]
                         )
                         if meshfit < curfit:
                             oldfit = curfit
                             curfit = meshfit
                             objnew = mesh[ii, :]
+                            best_model = meshmod
+                            best_tuner = tuner
 
             else:
                 mu = mu - self.delta
@@ -390,6 +422,10 @@ class Learn_Master():
         print(f'Optimal hyperparameters')
         for ii in range(len(obj)):
             print(f'{ii} == {obj[0, ii]}')
+
+
+        return best_model, best_tuner
+
 
 
 
@@ -469,7 +505,9 @@ if __name__ == '__main__':
     #
     #         )
 
-    ints = [0, 1, 2, 3, 4, 5]
+    hyperoptimizers = ['random', 'bayes', 'hyper']
+
+    ints = [0, 1, 2, 3, 4, 5, 6, 7]
 
     nn_arch = ['ff']
     curdim = 0
@@ -486,7 +524,12 @@ if __name__ == '__main__':
         optimizers,
         atom_embed_method,
         nn_arch,
+        hyperoptimizers,
         curout_dim=curdim,
+        mu0=4,
+        alpha=1,
+        delta=1,
+        maxiter=10,
     )
 
     LM.PS_integer()
