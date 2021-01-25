@@ -18,18 +18,26 @@ class Atom_RNN():
 
     def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='',
                  nullset_path = '', nullset_labels_path='',
+                 data=None, train_labels=None, test=None, test_labels=None, model=None,
+                 nullset = None, nullset_labels = None,
                  model_path = '', save_model_path='', trbatch_size=10, tebatch_size=1, epochs=100, curdim=0, input_size=10,
                   drop_per=0.1, units=100, output_size=1, steps=5, learn_rate=0.005, seed = 24,
                  regression=False, classification=False, optimize=False):
-        try:
-            with open(data_path, 'rb') as data_file:
-                self.data = pickle.load(data_file)
-        except ValueError:
-            print('Data path does not exist')
 
-        if isinstance(self.data, list):
-            self.data = self.data_to_numpy(self.data, self.input_size)
 
+        if data_path != '':
+            try:
+                with open(data_path, 'rb') as data_file:
+                    self.data = pickle.load(data_file)
+            except ValueError:
+                print('Data path does not exist')
+
+            if isinstance(self.data, list):
+                self.data = self.data_to_numpy(self.data, self.input_size)
+        elif data is not None:
+            self.data = data
+        else:
+            print('data and data_path not defined. ')
 
         self.trbatch_size = trbatch_size
         self.tebatch_size = tebatch_size
@@ -59,6 +67,10 @@ class Atom_RNN():
                 self.test_labels = self.data_to_numpy(self.test_labels, self.output_size)
 
             self.test_labels = self.splice_labels(self.test_labels, self.curdim)
+        elif test is not None:
+            self.test_data = test
+            self.test_labels = test_labels
+
 
 
         if train_label_path != '':
@@ -68,6 +80,8 @@ class Atom_RNN():
             if isinstance(self.train_labels, list):
                 self.train_labels = self.data_to_numpy(self.train_labels, self.output_size)
             self.train_labels = self.splice_labels(self.train_labels, self.curdim)
+        elif train_labels is not None:
+            self.train_labels = train_labels
 
 
         if nullset_path != '':
@@ -83,7 +97,9 @@ class Atom_RNN():
                 self.nullset_labels = pickle.load(null_labels_file)
             if not isinstance(self.nullset_labels, np.ndarray):
                 self.nullset_labels = self.data_to_numpy(self.nullset_labels, self.output_size)
-
+        elif nullset is not None:
+            self.nullset = nullset
+            self.nullset_labels = nullset_labels
 
         # self.data = self.data.T
         self.data = self.stepify(self.data, boollabels=False)
@@ -110,6 +126,8 @@ class Atom_RNN():
 
             if model_path != '':
                 self.model = keras.models.load_model(model_path)
+            elif model is not None:
+                self.model = model
             else:
                 print('Building new model')
                 if regression:

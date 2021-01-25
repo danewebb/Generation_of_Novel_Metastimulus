@@ -29,9 +29,11 @@ class Learn_Master():
     """
     def __init__(self, dataset_dict, vocab, ordered_encdata, ordered_labels, ints, input_dims, we_models, output_dims, keyword_weight_factor,
                  optimizers, atom_methods, nn_architectures, hyperoptimizers,
+                 savepath_model = '',
                  NN_prebuilt_model=None, NNclasse=None,
                  WE_classes=None, vocab_save_path='', data_save_path='',
                  projection=None, adjacency=None, curout_dim=0,
+                 epochs=1, rnn_steps=3,
 
                  nvar=10, maxiter=100, mindiff=1e-6, mu0=4, alpha=1e-1, delta=4,
                  ):
@@ -75,14 +77,21 @@ class Learn_Master():
         # if projection is not None and adjacency is not None:
         #     self.label_pairing()
 
-
+        self.epochs = epochs
         self.we_models = we_models
-
+        self.rnn_steps = rnn_steps
 
         self.mindiff = mindiff
         self.maxiter = maxiter
         self.mu0= mu0
         self.mu = mu0
+
+        if savepath_model != '':
+            self.savepath_model = savepath_model
+        else:
+            self.savepath_model = f'untitled_model_dim{self.curout_dim}'
+
+
 
         # need to define later
         self.list_train_paths = None
@@ -236,7 +245,7 @@ class Learn_Master():
                 seed=24,
                 optimizer=optimizer,
 
-                epochs=1,
+                epochs=self.epochs,
                 initial_points=3,
                 hyper_maxepochs=1,
                 hyper_iters=1
@@ -424,10 +433,112 @@ class Learn_Master():
             print(f'{ii} == {obj[0, ii]}')
 
 
-        return best_model, best_tuner
+        return obj, best_tuner, best_model
 
 
+    def build_null_labels(self, labs, proj, num_nulls):
+        nullset = np.empty(labs.shape)
+        null_arr = np.empty((labs.shape[0], labs.shape[1], num_nulls))
+        for num in range(num_nulls):
+            for ii in range(len(nullset)):
+                ri = np.random.randint(0, len(proj))
+                nullset[ii, :] = proj[ri, :]
+            null_arr[:, :, num] = nullset
 
+        return null_arr
+
+
+    def train_best_hps(self, tuner, objectives, train_epochs, num_nulls=50, dims=1):
+        best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+        model = tuner.hypermodel.build(best_hps)
+        obj = self.build_objdataset(objectives)
+        if num_nulls == 0:
+            null_labels = self.build_null_labels(self.test_labels,
+                                             self.ordered_labels,
+                                             num_nulls
+                                             )
+            resnull = np.empty((dims, train_epochs, num_nulls))
+        else:
+            null_labels = None
+
+        restr = np.empty((dims, train_epochs))
+        reste = np.empty((dims, train_epochs))
+
+        if obj[0, 6] == 0:
+
+            FF = Atom_FFNN(
+                data=self.train,
+                train_labels=self.train_labels,
+                test=self.test,
+                test_labels=self.test_labels,
+                nullset=self.test,
+                nullset_labels=null_labels,
+                model=model,
+                current_dim=dims,
+                save_model_path=self.savepath_model,
+                optimize=False,
+                epochs=1,
+            )
+            FF.save_model()
+            for ep in train_epochs:
+
+                FF = Atom_FFNN(
+                    data=self.train,
+                    train_labels=self.train_labels,
+                    test=self.test,
+                    test_labels=self.test_labels,
+                    nullset=self.test,
+                    nullset_labels=null_labels,
+                    model=model,
+                    current_dim=self.curout_dim,
+                    model_path=self.savepath_model,
+                    save_model_path=self.savepath_model,
+                    optimize=False,
+                    epochs=1,
+                )
+
+                history = FF.train()
+                trloss = history.history['loss']
+                restr[1, ep] = trloss[0]
+                FF.save_model()
+                reste[1, ep], _ = FF.test()
+                if num_nulls > 0:
+                    for jj in range(num_nulls):
+                        AFF = Atom_FFNN(
+                            nullset=self.test,
+                            nullset_labels=null_labels[1, :, jj],
+                        )
+                        resnull[1, ep, jj], _ = AFF.test_nullset()
+        else:
+            RNN = Atom_RNN(
+                data=self.train,
+                train_labels=self.train_labels,
+                test=self.test,
+                test_labels=self.test_labels,
+                nullset=self.test,
+                nullset_labels=null_labels,
+                model=model,
+                steps=self.rnn_steps,
+                curdim=self.curout_dim,
+                save_model_path=self.savepath_model,
+                optimize=False,
+                epochs=1,
+            )
+            for ep in train_epochs:
+                RNN = Atom_RNN(
+                    data=self.train,
+                    train_labels=self.train_labels,
+                    test=self.test,
+                    test_labels=self.test_labels,
+                    nullset = self.test,
+                    nullset_labels= null_labels,
+                    model = model,
+                    steps = self.rnn_steps,
+                    curdim=self.curout_dim,
+                    save_model_path=self.savepath_model,
+                    optimize = False,
+                    epochs = 1,
+                )
 
 
 
@@ -526,13 +637,16 @@ if __name__ == '__main__':
         nn_arch,
         hyperoptimizers,
         curout_dim=curdim,
+        epochs = 1,
         mu0=4,
         alpha=1,
         delta=1,
         maxiter=10,
     )
 
-    LM.PS_integer()
+    objectives, tuner, model = LM.PS_integer()
+
+
 
 
 

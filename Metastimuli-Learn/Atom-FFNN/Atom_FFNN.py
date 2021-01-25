@@ -18,7 +18,7 @@ from pathlib import Path
 class Atom_FFNN:
     def __init__(self, data_path='', train_label_path='', test_path='',  test_label_path='',
                  data=None, train_labels=None, test=None, test_labels=None, nullset=None,
-                 model_path = '', save_model_path='', batch_size=10, epochs=100, nullset_path='', nullset_labels_path='', nullset_labels=None,
+                 model_path = '', save_model_path='', model=None, batch_size=10, epochs=100, nullset_path='', nullset_labels_path='', nullset_labels=None,
                  drop_per=0.1, dense_out=2, dense_in=2, hidden=50, current_dim=0, learning_rate=0.001, seed=24,
                  regression=False, classification=False, optimize=False,
                  input_min=8, input_max=800, input_step=8, hid_min=8, hid_max=1600, hid_step=8,
@@ -152,6 +152,8 @@ class Atom_FFNN:
 
             if model_path != '':
                 self.model = keras.models.load_model(model_path)
+            elif model is not None:
+                self.model = model
             else:
                 print('Building new model')
                 if regression:
