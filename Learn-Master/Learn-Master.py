@@ -27,8 +27,8 @@ class Learn_Master():
     """
 
     """
-    def __init__(self, dataset_dict, vocab, ordered_encdata, ordered_labels, ints, input_dims, we_models, output_dims, keyword_weight_factor,
-                 optimizers, atom_methods, nn_architectures, hyperoptimizers,
+    def __init__(self, dataset_dict, vocab, ordered_encdata, ordered_labels, input_dims, we_models, output_dims, keyword_weight_factor,
+                 optimizers, atom_methods, nn_architectures, hyperoptimizers, ints,
                  savepath_model = '',
                  NN_prebuilt_model=None, NNclasse=None,
                  WE_classes=None, vocab_save_path='', data_save_path='',
@@ -37,6 +37,42 @@ class Learn_Master():
 
                  nvar=10, maxiter=100, mindiff=1e-6, mu0=4, alpha=1e-1, delta=4,
                  ):
+
+        """
+
+        :param dataset_dict: dictionary with dataset information. See Label_Text_Builder.py
+        :param vocab: list of word embedding vocab
+        :param ordered_encdata: list of encoded datasets used in the word embeddings
+        :param ordered_labels: list of labels aligned with the ordered_encdata
+        :param input_dims: list of input dimesnions
+        :param we_models: list of trained word embedding models (keras)
+        :param output_dims: list of projection output dimensions
+        :param keyword_weight_factor: list of values to weight keywords
+        :param optimizers: list of gradient optimizers ['sgd', 'adamax', 'adagrad', 'adam', 'adadelta', 'rmsprop']
+        :param atom_methods: list of atom methods ['bowsum', 'bowavg', 'ndelta']
+        :param nn_architectures: list of NN architectures ['ff', 'rnn']
+        :param hyperoptimizers: list of hyperparameter optimizer methods ['random', 'bayes', 'hyper']
+        :param ints: list of the indices that are integers in the objective variables
+        :param savepath_model:
+        :param NN_prebuilt_model:
+        :param NNclasse:
+        :param WE_classes:
+        :param vocab_save_path:
+        :param data_save_path:
+        :param projection:
+        :param adjacency:
+        :param curout_dim:
+        :param epochs:
+        :param rnn_steps:
+        :param nvar:
+        :param maxiter:
+        :param mindiff:
+        :param mu0:
+        :param alpha:
+        :param delta:
+        """
+
+
         """
         let us assume dataset is already created and encoded.
 
@@ -329,7 +365,10 @@ class Learn_Master():
         return xnew
 
 
-    def PS_integer(self):
+    def PS_integer(self, train_for=0, dict_template='', master_dict=None):
+        if master_dict is None:
+            master_dict = dict()
+        count = 0
         obj = np.zeros((1, self.nvar), dtype='int32')
         for ii in range(self.nvar):
             obj[0, ii] = np.random.randint(self.lb[ii], self.ub[ii])
@@ -383,6 +422,10 @@ class Learn_Master():
                     best_model = meshmod
                     best_tuner = tuner
                     changeflag = 1
+                    if train_for > 0:
+                        results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=0)
+                        master_dict[dict_template+f'{count}'] = results
+                        count += 1
 
 
             if changeflag == 1:
@@ -421,6 +464,10 @@ class Learn_Master():
                             objnew = mesh[ii, :]
                             best_model = meshmod
                             best_tuner = tuner
+                            if train_for > 0:
+                                results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=0)
+                                master_dict[dict_template + f'{count}'] = results
+                                count += 1
 
             else:
                 mu = mu - self.delta
@@ -433,7 +480,7 @@ class Learn_Master():
             print(f'{ii} == {obj[0, ii]}')
 
 
-        return obj, best_tuner, best_model
+        return obj, best_tuner, best_model, master_dict
 
 
     def build_null_labels(self, labs, proj, num_nulls):
@@ -448,40 +495,26 @@ class Learn_Master():
         return null_arr
 
 
-    def train_best_hps(self, tuner, objectives, train_epochs, num_nulls=50, dims=1):
+    def train_best_hps(self, tuner, objectives, train_epochs, num_nulls=50):
         best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
         model = tuner.hypermodel.build(best_hps)
         obj = self.build_objdataset(objectives)
+
+        dimsout = self.output_dims[obj[0, 2]]
         if num_nulls == 0:
             null_labels = self.build_null_labels(self.test_labels,
                                              self.ordered_labels,
                                              num_nulls
                                              )
-            resnull = np.empty((dims, train_epochs, num_nulls))
+            resnull = np.empty((dimsout, train_epochs, num_nulls))
         else:
             null_labels = None
 
-        restr = np.empty((dims, train_epochs))
-        reste = np.empty((dims, train_epochs))
+        restr = np.empty((dimsout, train_epochs))
+        reste = np.empty((dimsout, train_epochs))
 
         if obj[0, 6] == 0:
-
-            FF = Atom_FFNN(
-                data=self.train,
-                train_labels=self.train_labels,
-                test=self.test,
-                test_labels=self.test_labels,
-                nullset=self.test,
-                nullset_labels=null_labels,
-                model=model,
-                current_dim=dims,
-                save_model_path=self.savepath_model,
-                optimize=False,
-                epochs=1,
-            )
-            FF.save_model()
-            for ep in train_epochs:
-
+            for dim in range(dimsout):
                 FF = Atom_FFNN(
                     data=self.train,
                     train_labels=self.train_labels,
@@ -490,61 +523,96 @@ class Learn_Master():
                     nullset=self.test,
                     nullset_labels=null_labels,
                     model=model,
-                    current_dim=self.curout_dim,
-                    model_path=self.savepath_model,
-                    save_model_path=self.savepath_model,
+                    current_dim=dim,
+                    save_model_path=self.savepath_model[dim],
                     optimize=False,
+                    regression=True,
                     epochs=1,
                 )
-
-                history = FF.train()
-                trloss = history.history['loss']
-                restr[1, ep] = trloss[0]
                 FF.save_model()
-                reste[1, ep], _ = FF.test()
-                if num_nulls > 0:
-                    for jj in range(num_nulls):
-                        AFF = Atom_FFNN(
-                            nullset=self.test,
-                            nullset_labels=null_labels[1, :, jj],
-                        )
-                        resnull[1, ep, jj], _ = AFF.test_nullset()
+                for ep in range(train_epochs):
+
+                    FF = Atom_FFNN(
+                        data=self.train,
+                        train_labels=self.train_labels,
+                        test=self.test,
+                        test_labels=self.test_labels,
+                        nullset=self.test,
+                        nullset_labels=null_labels,
+                        current_dim=dim,
+                        model_path=self.savepath_model[dim],
+                        save_model_path=self.savepath_model[dim],
+                        optimize=False,
+                        regression=True,
+                        epochs=1,
+                    )
+
+                    history = FF.train()
+                    trloss = history.history['loss']
+                    restr[dim, ep] = trloss[0]
+                    FF.save_model()
+                    reste[dim, ep], _ = FF.test()
+                    if num_nulls > 0:
+                        for jj in range(num_nulls):
+                            AFF = Atom_FFNN(
+                                nullset=self.test,
+                                nullset_labels=null_labels[1, :, jj],
+                            )
+                            resnull[dim, ep, jj], _ = AFF.test_nullset()
+
         else:
-            RNN = Atom_RNN(
-                data=self.train,
-                train_labels=self.train_labels,
-                test=self.test,
-                test_labels=self.test_labels,
-                nullset=self.test,
-                nullset_labels=null_labels,
-                model=model,
-                steps=self.rnn_steps,
-                curdim=self.curout_dim,
-                save_model_path=self.savepath_model,
-                optimize=False,
-                epochs=1,
-            )
-            for ep in train_epochs:
+            for dim in range(dimsout):
                 RNN = Atom_RNN(
-                    data=self.train,
-                    train_labels=self.train_labels,
-                    test=self.test,
-                    test_labels=self.test_labels,
-                    nullset = self.test,
-                    nullset_labels= null_labels,
-                    model = model,
-                    steps = self.rnn_steps,
-                    curdim=self.curout_dim,
-                    save_model_path=self.savepath_model,
-                    optimize = False,
-                    epochs = 1,
+                    data=self.ordtrain,
+                    train_labels=self.ordtrain_labels,
+                    test=self.ordtest,
+                    test_labels=self.ordtest_labels,
+                    nullset=self.ordtest,
+                    nullset_labels=null_labels,
+                    model=model,
+                    steps=self.rnn_steps,
+                    curdim=dim,
+                    save_model_path=self.savepath_model[dim],
+                    optimize=False,
+                    regression=True,
+                    epochs=1,
                 )
+                RNN.save_model()
+
+                for ep in train_epochs:
+                    RNN = Atom_RNN(
+                        data=self.ordtrain,
+                        train_labels=self.ordtrain_labels,
+                        test=self.ordtest,
+                        test_labels=self.ordtest_labels,
+                        nullset = self.ordtest,
+                        nullset_labels= null_labels,
+                        steps = self.rnn_steps,
+                        curdim=self.curout_dim,
+                        model_path=self.savepath_model[dim],
+                        save_model_path=self.savepath_model[dim],
+                        optimize = False,
+                        regression=True,
+                        epochs = 1,
+                    )
+
+                    history = RNN.train()
+                    trloss = history.history['loss']
+                    restr[dim, ep] = trloss[0]
+                    RNN.save_model()
+                    reste[dim, ep], _ = RNN.test()
+                    if num_nulls > 0:
+                        for jj in range(num_nulls):
+                            RNN = Atom_RNN(
+                                nullset=self.ordtest,
+                                nullset_labels=null_labels[dim, :, jj],
+                            )
+                            resnull[dim, ep, jj], _ = RNN.test_nullset()
 
 
 
 
-
-
+        return [restr, reste, resnull]
 
 
 
@@ -627,7 +695,6 @@ if __name__ == '__main__':
         vocab,
         encoded_data,
         labels,
-        ints,
         input_dims,
         we_model_paths,
         output_dims,
@@ -636,15 +703,20 @@ if __name__ == '__main__':
         atom_embed_method,
         nn_arch,
         hyperoptimizers,
+        ints,
         curout_dim=curdim,
         epochs = 1,
         mu0=4,
         alpha=1,
         delta=1,
         maxiter=10,
+        savepath_model='model'
     )
 
-    objectives, tuner, model = LM.PS_integer()
+    results = dict()
+    optimization_results = dict()
+    dict_template = 'improved_meta_set'
+    objectives, tuner, model, optimization_results['optimizing'] = LM.PS_integer(train_for=10, dict_template=dict_template, master_dict=results)
 
 
 

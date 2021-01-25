@@ -411,7 +411,20 @@ class Atom_RNN():
 
         return tuner
 
+    def test_nullset(self):
+        try:
+            result = self.model.evaluate(self.nullset, self.nullset_labels)
 
+        except:
+            self.nullset = self.nullset.T # transpose data
+            result = self.model.evaluate(self.nullset, self.nullset_labels)
+
+        if len(result) > 2:
+            print(f'Nulltest results: Loss= {result[0]:.3f}, Accuracy = {100*result[1]:.3f}%')
+            return result[0], result[1]
+        else:
+            print(f'Nulltest results: Loss= {result[0]:.3f}')
+            return result
 
 if __name__ == '__main__':
     with tf.device('/cpu:0'):
