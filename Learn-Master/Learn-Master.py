@@ -365,7 +365,7 @@ class Learn_Master():
         return xnew
 
 
-    def PS_integer(self, train_for=0, dict_template='', master_dict=None):
+    def PS_integer(self, train_for=0, dict_template='', master_dict=None, n_nulls=50):
         if master_dict is None:
             master_dict = dict()
         count = 0
@@ -423,7 +423,7 @@ class Learn_Master():
                     best_tuner = tuner
                     changeflag = 1
                     if train_for > 0:
-                        results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=0)
+                        results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=n_nulls)
                         master_dict[dict_template+f'{count}'] = results
                         count += 1
 
@@ -465,7 +465,7 @@ class Learn_Master():
                             best_model = meshmod
                             best_tuner = tuner
                             if train_for > 0:
-                                results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=0)
+                                results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=n_nulls)
                                 master_dict[dict_template + f'{count}'] = results
                                 count += 1
 
@@ -756,7 +756,7 @@ if __name__ == '__main__':
     results = dict()
 
     dict_template = 'improved_meta_set'
-    objectives, tuner, model, optimization_results['optimizing'] = LM.PS_integer(train_for=10, dict_template=dict_template, master_dict=results)
+    objectives, tuner, model, optimization_results['optimizing'] = LM.PS_integer(train_for=10, dict_template=dict_template, master_dict=results, n_nulls=0)
 
     with open(Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Learn-Master\optimized-models\results.pkl'), 'wb') as f:
         pickle.dump(optimization_results, f)
