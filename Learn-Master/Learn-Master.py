@@ -29,7 +29,7 @@ class Learn_Master():
     """
     def __init__(self, dataset_dict, vocab, ordered_encdata, ordered_labels, input_dims, we_models, output_dims, keyword_weight_factor,
                  optimizers, atom_methods, nn_architectures, hyperoptimizers, ints,
-                 savepath_model = '',
+                 savepath_model = None,
                  NN_prebuilt_model=None, NNclasse=None,
                  WE_classes=None, vocab_save_path='', data_save_path='',
                  projection=None, adjacency=None, curout_dim=0,
@@ -122,10 +122,10 @@ class Learn_Master():
         self.mu0= mu0
         self.mu = mu0
 
-        if savepath_model != '':
+        if savepath_model is not None:
             self.savepath_model = savepath_model
         else:
-            self.savepath_model = f'untitled_model_dim{self.curout_dim}'
+            self.savepath_model = Path(f'untitled_model_dim{self.curout_dim}')
 
 
 
@@ -552,13 +552,25 @@ class Learn_Master():
                     restr[dim, ep] = trloss[0]
                     FF.save_model()
                     reste[dim, ep], _ = FF.test()
+
                     if num_nulls > 0:
                         for jj in range(num_nulls):
                             AFF = Atom_FFNN(
+                                data=self.train,
+                                train_labels=self.train_labels,
+                                test=self.test,
+                                test_labels=self.test_labels,
                                 nullset=self.test,
                                 nullset_labels=null_labels[1, :, jj],
+                                current_dim=dim,
+                                model_path=self.savepath_model[dim],
+                                save_model_path=self.savepath_model[dim],
+                                optimize=False,
+                                regression=True,
+                                epochs=1,
                             )
                             resnull[dim, ep, jj], _ = AFF.test_nullset()
+                    keras.backend.clear_session()
 
         else:
             for dim in range(dimsout):
@@ -604,10 +616,22 @@ class Learn_Master():
                     if num_nulls > 0:
                         for jj in range(num_nulls):
                             RNN = Atom_RNN(
+                                data=self.ordtrain,
+                                train_labels=self.ordtrain_labels,
+                                test=self.ordtest,
+                                test_labels=self.ordtest_labels,
                                 nullset=self.ordtest,
                                 nullset_labels=null_labels[dim, :, jj],
+                                steps=self.rnn_steps,
+                                curdim=self.curout_dim,
+                                model_path=self.savepath_model[dim],
+                                save_model_path=self.savepath_model[dim],
+                                optimize=False,
+                                regression=True,
+                                epochs=1,
                             )
                             resnull[dim, ep, jj], _ = RNN.test_nullset()
+                    keras.backend.clear_session()
 
 
 
@@ -617,6 +641,9 @@ class Learn_Master():
 
 
 if __name__ == '__main__':
+
+
+
 
     paras_path = Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\raw_ricoparas.pkl')
     with open(paras_path, 'rb') as f:
@@ -646,6 +673,15 @@ if __name__ == '__main__':
 
     input_dims = [2, 10, 30, 50, 2]
     output_dims = [2, 3, 10] # greatly increases computation time
+
+    model_paths = []
+    for ii in range(output_dims[-1]):
+        if len(range(output_dims[-1])) >= 100:
+            model_paths.append(Path(f'C:\\Users\\liqui\\PycharmProjects\\Generation_of_Novel_Metastimulus\\Lib\\Learn-Master\\optimized-models\\model_00{ii}'))
+        else:
+            model_paths.append(Path(f'C:\\Users\\liqui\\PycharmProjects\\Generation_of_Novel_Metastimulus\\Lib\\Learn-Master\\optimized-models\\model_0{ii}'))
+
+
 
     weighting_factor = [1, 5, 25, 125, 625]
 
@@ -710,13 +746,20 @@ if __name__ == '__main__':
         alpha=1,
         delta=1,
         maxiter=10,
-        savepath_model='model'
+        savepath_model=model_paths,
     )
 
+    with open(Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Learn-Master\optimized-models\results.pkl'), 'rb') as f:
+        optimization_results = pickle.load(f)
+
+    # optimization_results = dict()
     results = dict()
-    optimization_results = dict()
+
     dict_template = 'improved_meta_set'
     objectives, tuner, model, optimization_results['optimizing'] = LM.PS_integer(train_for=10, dict_template=dict_template, master_dict=results)
+
+    with open(Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Learn-Master\optimized-models\results.pkl'), 'wb') as f:
+        pickle.dump(optimization_results, f)
 
 
 
