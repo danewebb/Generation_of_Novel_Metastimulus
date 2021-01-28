@@ -22,8 +22,41 @@ class Atom_RNN():
                  nullset = None, nullset_labels = None,
                  model_path = '', save_model_path='', trbatch_size=10, tebatch_size=1, epochs=100, curdim=0, input_size=10,
                   drop_per=0.1, units=100, output_size=1, steps=5, learn_rate=0.005, seed = 24,
-                 regression=False, classification=False, optimize=False):
+                 regression=False, classification=False, optimize=False,
+                 input_min=8, input_max=800, input_step=8, hid_min=8, hid_max=1600, hid_step=8,
+                 min_hlayers=1, max_hlayers=10,
+                 learn_rate_min=1e-5, learn_rate_max=1e-2, beta1_min=0.7, beta1_max=0.95, beta1_step=5e-2,
+                 beta2_min=0.99, beta2_max=0.999, beta2_step=9e-4, momentum_min=0, momentum_max=1, momentum_step=0.1,
+                 initial_acc_min=1e-2, initial_acc_max=5e-1, initial_acc_step=1e-2, epsilon_min=1e-9, epsilon_max=1e-5,
+                 epsilon_step=1e-9,
+                 rho_min=0.5, rho_max=0.95, rho_step=0.05,
+                 max_trials=1, max_executions_per=1, initial_points=5, hyper_maxepochs=100, hyper_factor=3,
+                 hyper_iters=10,
+                 optimizer='sgd',
+                 ):
 
+        self.input_min = input_min
+        self.input_max = input_max
+        self.input_step = input_step
+        self.hid_min = hid_min
+        self.hid_max = hid_max
+        self.hid_step = hid_step
+        self.min_hlayers = min_hlayers
+        self.max_hlayers = max_hlayers
+        self.learn_rate_min = learn_rate_min; self.learn_rate_max = learn_rate_max
+        self.beta1_min = beta1_min; self.beta1_max = beta1_max; self.beta1_step = beta1_step
+        self.beta2_min = beta2_min; self.beta2_max = beta2_max; self.beta2_step = beta2_step
+        self.momentum_min = momentum_min; self.momentum_max = momentum_max; self.momentum_step = momentum_step
+        self.initial_acc_min = initial_acc_min; self.initial_acc_max = initial_acc_max
+        self.initial_acc_step = initial_acc_step; self.epsilon_min = epsilon_min
+        self.epsilon_max = epsilon_max; self.epsilon_step = epsilon_step
+        self.rho_min =rho_min; self.rho_max = rho_max; self.rho_step = rho_step
+
+        self.max_trials = max_trials; self.max_executions_per = max_executions_per
+        self.initial_points = initial_points; self.hyper_maxepochs = hyper_maxepochs
+        self.hyper_factor = hyper_factor; self.hyper_iters=hyper_iters
+
+        self.optimizer = optimizer
 
         if data_path != '':
             try:
@@ -65,12 +98,11 @@ class Atom_RNN():
             self.test_labels = np.asarray(self.test_labels)
             if isinstance(self.test_labels, list):
                 self.test_labels = self.data_to_numpy(self.test_labels, self.output_size)
-
-            self.test_labels = self.splice_labels(self.test_labels, self.curdim)
         elif test is not None:
             self.test_data = test
             self.test_labels = test_labels
 
+        self.test_labels = self.splice_labels(self.test_labels, self.curdim)
 
 
         if train_label_path != '':
@@ -79,10 +111,11 @@ class Atom_RNN():
             self.train_labels = np.asarray(self.train_labels)
             if isinstance(self.train_labels, list):
                 self.train_labels = self.data_to_numpy(self.train_labels, self.output_size)
-            self.train_labels = self.splice_labels(self.train_labels, self.curdim)
+
         elif train_labels is not None:
             self.train_labels = train_labels
 
+        self.train_labels = self.splice_labels(self.train_labels, self.curdim)
 
         if nullset_path != '':
             # nullset is either train set, test set, or validation set
@@ -101,6 +134,8 @@ class Atom_RNN():
             self.nullset = nullset
             self.nullset_labels = nullset_labels
 
+        self.nullset_labels = self.splice_labels(self.nullset_labels, self.curdim)
+
         # self.data = self.data.T
         self.data = self.stepify(self.data, boollabels=False)
         self.train_labels = self.stepify(self.train_labels, boollabels=True)
@@ -109,12 +144,19 @@ class Atom_RNN():
         except:
             self.test_data = None
 
-
         try:
             self.test_labels = self.stepify(self.test_labels, boollabels=True)
         except:
             self.test_labels = None
 
+        try:
+            self.nullset = self.stepify(self.nullset, boollabels=False)
+        except:
+            self.nullset = None
+        try:
+            self.nullset_labels = self.stepify(self.nullset_labels, boollabels=True)
+        except:
+            self.nullset_labels = None
 
         self.history = dict()
 
@@ -154,14 +196,14 @@ class Atom_RNN():
 
     def splice_labels(self, labels, dim):
         try:
-            labs = labels[:, dim]
+            labs = labels[:, dim, :]
         except:
             labs = None
         return labs
 
     def stepify(self, arr, boollabels=False):
         # step_arr = np.empty((arr.shape[1]))
-        if boollabels:
+        if boollabels: # if labels this should be true
             for ii in range(self.steps):
                 newrow = arr[-1]
                 # newrow = np.reshape(newrow, (1, arr.shape[1]))
@@ -171,11 +213,16 @@ class Atom_RNN():
             new_arr = self.__converttomatrix(arr, labels=boollabels)
             # new_arr = np.reshape(new_arr, (new_arr.shape[0], 1))
         else:
-            for ii in range(self.steps):
-                newrow = arr[-1, :]
-                newrow = np.reshape(newrow, (1, arr.shape[1]))
-                arr = np.append(arr, newrow, axis=0)
-
+            if arr.ndim == 2:
+                for ii in range(self.steps):
+                    newrow = arr[-1, :]
+                    newrow = np.reshape(newrow, (1, arr.shape[1]))
+                    arr = np.append(arr, newrow, axis=0)
+            elif arr.ndim == 3:
+                for ii in range(self.steps):
+                    newrow = arr[-1, :, :]
+                    newrow = np.reshape(newrow, (1, arr.shape[1]), arr.shape[2])
+                    arr = np.append(arr, newrow, axis=0)
             # arr = (4__, 30, self.step)
             new_arr = self.__converttomatrix(arr, labels=boollabels)
             new_arr = np.reshape(new_arr, (new_arr.shape[0], new_arr.shape[2], new_arr.shape[1]))
@@ -311,15 +358,15 @@ class Atom_RNN():
         model = keras.Sequential()
 
         model.add(layers.SimpleRNN(
-            hp.Int('rnn_units', min_value=30, max_value=900, step=15),
+            hp.Int('rnn_units', min_value=self.input_min, max_value=self.input_max, step=self.input_step),
             input_shape=(30, self.steps),
             activation=hp.Choice('rnn_activation', values=['tanh', 'sigmoid', 'softmax'])
         ))
 
-        for ii in range(hp.Int('num_h-layers', 1, 10)):
+        for ii in range(hp.Int('num_h-layers', self.min_hlayers, self.max_hlayers)):
             model.add(
                 layers.Dense(
-                    hp.Int(f'Dense_{ii}_units', min_value=16, max_value=1600, step=16),
+                    hp.Int(f'Dense_{ii}_units', min_value=self.hid_min, max_value=self.hid_max, step=self.hid_step),
                     activation=hp.Choice(f'Dense_{ii}_activation', values=['tanh', 'sigmoid', 'softmax'])
                 )
             )
@@ -334,82 +381,153 @@ class Atom_RNN():
         # keras.optimizers.Adamax(learning_rate=1e-3, beta_1=0.9, beta_2=0.999, epsilon=1e-7) may be superior with embeddings
 
 
+        model = self.optim_choice(hp, model)
 
-        model.compile(
-            optimizer=keras.optimizers.Adam(learning_rate=hp.Float('learning_rate',
-                                                                   min_value=1e-5,
-                                                                   max_value=1e-2,
-                                                                   sampling='LOG',
-                                                                   ),
-                                            beta_1=hp.Float('beta_1', min_value=0.7, max_value=0.95, step=5e-2),
-                                            beta_2=hp.Float('beta_2', min_value=0.99, max_value=0.9999, step=9e-4),
-
-                                            ),
-
-            loss=tf.keras.losses.mean_squared_error,
-            metrics=['mean_squared_error']
-        )
         return model
-
 
     def random_search(self):
         tuner = RandomSearch(
             self.build_model,
-            objective='val_mean_squared_error',
-            max_trials=1,
-            executions_per_trial=3,
+            'val_mean_squared_error',
+            self.max_trials,  # more than 2 and it crashes
+            overwrite=True,
+            # executions_per_trial=self.max_executions_per,
             # directory=dir,
-            )
-
-        tuner.search(
-            x = self.data,
-            y = self.train_labels,
-            epochs = self.epochs,
-            # batch_size = self.batch_size,
-            validation_data=(self.test_data, self.test_labels)
-
+            # project_name=name
         )
+        # try:
+        tuner.search(
+            x=self.data,
+            y=self.train_labels,
+            epochs=self.epochs,
+            # batch_size=self.batch_size,
+            validation_data=(self.test_data, self.test_labels)
+        )
+        # except ValueError:
+        #     print('error')
+
         return tuner
 
     def bayesian(self):
         tuner = BayesianOptimization(
             self.build_model,
-            objective='val_mean_squared_error',
-            max_trials=3,
-            num_initial_points=3,
+            objective='mean_squared_error',
+            max_trials=self.max_trials,  # more than 2 and it crashes
+            num_initial_points=self.initial_points,
             seed=self.seed,
+            overwrite=True,
             # directory=dir,
-            )
+        )
 
         tuner.search(
-            x = self.data,
-            y = self.train_labels,
-            epochs = self.epochs,
-            # batch_size = self.batch_size,
-            validation_data=(self.test_data, self.test_labels)
+            x=self.data,
+            y=self.train_labels,
+            epochs=self.epochs,
+            # batch_size=self.batch_size,
+            validation_data=(self.test_data, self.test_labels),
+
         )
+
         return tuner
 
     def hyperband(self):
         tuner = Hyperband(
             self.build_model,
-            objective='val_mean_squared_error',
-            max_epochs=self.epochs+10,
-            factor=3,
-            hyperband_iterations= 5, # The number of times to iterate over the full Hyperband algorithm. It is recommended to set this to as high a value as is within your resource budget.
+            objective='mean_squared_error',
+            max_epochs=self.hyper_maxepochs,
+            factor=self.hyper_factor,
+            hyperband_iterations=self.hyper_iters,
+            # The number of times to iterate over the full Hyperband algorithm. It is recommended to set this to as high a value as is within your resource budget.
             # directory=dir,
-            seed=self.seed
-            )
+            seed=self.seed,
+            overwrite=True,
+        )
 
         tuner.search(
-            x = self.data,
-            y = self.train_labels,
-            epochs = self.epochs,
-            # batch_size = self.batch_size,
-            validation_data=(self.test_data, self.test_labels)
+            x=self.data,
+            y=self.train_labels,
+            epochs=self.epochs,
+            # batch_size=self.batch_size,
+            validation_data=(self.test_data, self.test_labels),
+
         )
 
         return tuner
+
+    def optim_choice(self, hp, model):
+        self.optimizer = self.optimizer.lower()
+
+
+        if self.optimizer == 'sgd':
+            model.compile(
+                optimizer=keras.optimizers.SGD(
+                    learning_rate=hp.Float('learning_rate',
+                                           min_value=self.learn_rate_min, max_value=self.learn_rate_max,
+                                           sampling='LOG'),
+                    momentum=hp.Float('momentum', min_value=self.momentum_min, max_value=self.momentum_max, step=self.momentum_step)),
+                loss=tf.keras.losses.mean_squared_error,
+                metrics=['mean_squared_error'])
+
+        elif self.optimizer == 'adam':
+            model.compile(
+                optimizer=keras.optimizers.Adam(
+                    learning_rate=hp.Float('learning_rate',
+                                           min_value=self.learn_rate_min, max_value=self.learn_rate_max, sampling='LOG'),
+                    beta_1=hp.Float('beta_1', min_value=self.beta1_min, max_value=self.beta1_max, step=self.beta1_step),
+                    beta_2=hp.Float('beta_2', min_value=self.beta2_min, max_value=self.beta2_max, step=self.beta2_step)),
+                loss=tf.keras.losses.mean_squared_error,
+                metrics=['mean_squared_error'])
+
+        elif self.optimizer == 'adagrad':
+            model.compile(
+                optimizer=keras.optimizers.Adagrad(
+                    learning_rate=hp.Float('learning_rate',
+                                           min_value=self.learn_rate_min, max_value=self.learn_rate_max, sampling='LOG'),
+                    initial_accumulator_value=hp.Float('initial_accumulator', min_value=self.initial_acc_min, max_value=self.initial_acc_max, step=self.initial_acc_step),
+                    epsilon=hp.Float('epsilon', min_value=self.epsilon_min, max_value=self.epsilon_max, step=self.epsilon_step)),
+                loss=tf.keras.losses.mean_squared_error,
+                metrics=['mean_squared_error'])
+
+        elif self.optimizer == 'rmsprop':
+            model.compile(
+                optimizer=keras.optimizers.RMSprop(
+                    learning_rate=hp.Float('learning_rate',
+                                           min_value=self.learn_rate_min, max_value=self.learn_rate_max, sampling='LOG'),
+                    rho=hp.Float('rho', min_value=self.rho_min, max_value=self.rho_max, step=self.rho_step),
+                    momentum=hp.Float('momentum', min_value=self.momentum_min, max_value=self.momentum_max, step=self.momentum_step),
+                    epsilon=hp.Float('epsilon', min_value=self.epsilon_min, max_value=self.epsilon_max, step=self.epsilon_step)
+                ),
+                loss=tf.keras.losses.mean_squared_error,
+                metrics=['mean_squared_error'])
+
+        elif self.optimizer == 'adadelta':
+            model.compile(
+                optimizer=keras.optimizers.Adadelta(
+                    learning_rate=hp.Float('learning_rate',
+                                           min_value=self.learn_rate_min, max_value=self.learn_rate_max, sampling='LOG'),
+                    rho=hp.Float('rho', min_value=self.rho_min, max_value=self.rho_max, step=self.rho_step),
+                    epsilon=hp.Float('epsilon', min_value=self.epsilon_min, max_value=self.epsilon_max, step=self.epsilon_step)
+                ),
+                loss=tf.keras.losses.mean_squared_error,
+                metrics=['mean_squared_error'])
+
+        elif self.optimizer == 'adamax':
+            model.compile(
+                optimizer=keras.optimizers.Adamax(
+                    learning_rate=hp.Float('learning_rate',
+                                           min_value=self.learn_rate_min, max_value=self.learn_rate_max, sampling='LOG'),
+                    beta_1=hp.Float('beta_1', min_value=self.beta1_min, max_value=self.beta1_max, step=self.beta1_step),
+                    beta_2=hp.Float('beta_2', min_value=self.beta2_min, max_value=self.beta2_max, step=self.beta2_step),
+                    epsilon=hp.Float('epsilon', min_value=self.epsilon_min, max_value=self.epsilon_max, step=self.epsilon_step)),
+                loss=tf.keras.losses.mean_squared_error,
+                metrics=['mean_squared_error'])
+
+        else:
+            raise NameError('Optimizer input is not valid.')
+
+        return model
+
+
 
     def test_nullset(self):
         try:

@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 # import matplotlib.pyplot as plt
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -170,12 +171,12 @@ if __name__ == '__main__':
 
 
 
-    wre = word_embedding_ricocorpus(data, vocab, 30, shuffling=True,
-                                    save_location=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_30dims',
+    wre = word_embedding_ricocorpus(data, vocab, 40, shuffling=True,
+                                    save_location=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_40dims',
                                     set_epochs=10000
                                     )
 
     wre.list_to_numpy()
     wre.train_embedding()
-    wre.retrieve_we(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ricocorpus_1000ep_30dims\vecs.tsv',
-                    r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ricocorpus_1000ep_30dims\meta.tsv')
+    # wre.retrieve_we(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ricocorpus_1000ep_30dims\vecs.tsv',
+    #                 r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ricocorpus_1000ep_30dims\meta.tsv')

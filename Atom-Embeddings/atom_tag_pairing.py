@@ -175,7 +175,7 @@ if __name__ == '__main__':
     with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\adjacency_train.json', 'rb') as f2:
         adj = json.load(f2)
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_3dims.pkl', 'rb') as f3:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_9dims.pkl', 'rb') as f3:
         proj = pickle.load(f3)
 
     # r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\Data\Projection.pkl'
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     ATP.tag_pairing()
     # labels = ATP.one_hotify()
     labels = ATP.projection_vectors()
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_3dims.pkl', 'wb') as f4:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_9dims.pkl', 'wb') as f4:
         pickle.dump(labels, f4)
 
     # Inverse

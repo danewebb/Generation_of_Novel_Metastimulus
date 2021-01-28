@@ -28,14 +28,14 @@ class Learn_Master():
 
     """
     def __init__(self, dataset_dict, vocab, ordered_encdata, ordered_labels, input_dims, we_models, output_dims, keyword_weight_factor,
-                 optimizers, atom_methods, nn_architectures, hyperoptimizers, ints,
+                 optimizers, atom_methods, nn_architectures, hyperoptimizers, ints, projections=None,
                  savepath_model = None,
                  NN_prebuilt_model=None, NNclasse=None,
                  WE_classes=None, vocab_save_path='', data_save_path='',
                  projection=None, adjacency=None, curout_dim=0,
-                 epochs=1, rnn_steps=3,
+                 epochs=1, fitness_epochs=10, rnn_steps=3,
 
-                 nvar=10, maxiter=100, mindiff=1e-6, mu0=4, alpha=1e-1, delta=4,
+                 maxiter=100, mindiff=1e-6, mu0=4, alpha=1e-1, delta=4,
                  ):
 
         """
@@ -116,7 +116,7 @@ class Learn_Master():
         self.epochs = epochs
         self.we_models = we_models
         self.rnn_steps = rnn_steps
-
+        self.fitness_epochs = fitness_epochs
         self.mindiff = mindiff
         self.maxiter = maxiter
         self.mu0= mu0
@@ -127,7 +127,8 @@ class Learn_Master():
         else:
             self.savepath_model = Path(f'untitled_model_dim{self.curout_dim}')
 
-
+        if projections is not None:
+            self.projections = projections
 
         # need to define later
         self.list_train_paths = None
@@ -162,7 +163,7 @@ class Learn_Master():
         else:
             obj = objectives
 
-        if obj[0, 1] == 4:
+        if obj[0, 1] == 8:
             # sciart
             voc = self.vocab[1]
             enc = self.ordered_encdata[1]
@@ -262,48 +263,90 @@ class Learn_Master():
 
 
 
-    def ff_fitness(self, input_dim, curout_dim, optimizer='sgd', hyperoptimizer='random'):
+    def ff_fitness(self, input_dim, curout_dim, optimizer='sgd', nn_architecture='ff', hyperoptimizer='random'):
+
 
         with tf.device('/cpu:0'):
-            AFF = Atom_FFNN(
-                data=self.train,
-                train_labels=self.train_labels,
-                test=self.test,
-                test_labels=self.test_labels,
-                nullset=self.test,
-                # batch_size=set_batch_size,
-                # epochs=set_epochs,
-                # learning_rate=learn_rate,
-                dense_out=1,
-                dense_in=input_dim,
-                current_dim=curout_dim,
-                optimize=True,
-                seed=24,
-                optimizer=optimizer,
+            if nn_architecture == 'ff':
+                AFF = Atom_FFNN(
+                    data=self.train,
+                    train_labels=self.train_labels,
+                    test=self.test,
+                    test_labels=self.test_labels,
+                    nullset=self.test,
+                    # batch_size=set_batch_size,
+                    # epochs=set_epochs,
+                    # learning_rate=learn_rate,
+                    dense_out=1,
+                    dense_in=input_dim,
+                    current_dim=curout_dim,
+                    optimize=True,
+                    seed=24,
+                    optimizer=optimizer,
 
-                epochs=self.epochs,
-                initial_points=3,
-                hyper_maxepochs=1,
-                hyper_iters=1
-            )
-            xtest = AFF.test_data
-            ytest = AFF.test_labels
+                    epochs=self.fitness_epochs,
+                    initial_points=3,
+                    hyper_maxepochs=1,
+                    hyper_iters=1
+                )
+                xtest = AFF.test_data
+                ytest = AFF.test_labels
 
-            if hyperoptimizer == 'random':
-                tuner = AFF.random_search()
-                best_model = tuner.get_best_models(num_models=1)[0]
-                loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
-                print('Completed random search\n')
-            elif hyperoptimizer == 'bayes':
-                tuner = AFF.bayesian()
-                best_model = tuner.get_best_models(num_models=1)[0]
-                loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
-                print('Completed bayesian\n')
-            elif hyperoptimizer == 'hyper':
-                tuner = AFF.hyperband()
-                best_model = tuner.get_best_models(num_models=1)[0]
-                loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
-                print('Completed hyperband\n')
+                if hyperoptimizer == 'random':
+                    tuner = AFF.random_search()
+                    best_model = tuner.get_best_models(num_models=1)[0]
+                    loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
+                    print('Completed random search\n')
+                elif hyperoptimizer == 'bayes':
+                    tuner = AFF.bayesian()
+                    best_model = tuner.get_best_models(num_models=1)[0]
+                    loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
+                    print('Completed bayesian\n')
+                elif hyperoptimizer == 'hyper':
+                    tuner = AFF.hyperband()
+                    best_model = tuner.get_best_models(num_models=1)[0]
+                    loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
+                    print('Completed hyperband\n')
+            else:
+                RNN = Atom_RNN(
+                    data=self.ordtrain,
+                    train_labels=self.ordtrain_labels,
+                    test=self.ordtest,
+                    test_labels=self.ordtest_labels,
+                    nullset=self.ordtest,
+                    # batch_size=set_batch_size,
+                    # epochs=set_epochs,
+                    # learning_rate=learn_rate,
+                    output_size=1,
+                    input_size=input_dim,
+                    curdim=curout_dim,
+                    optimize=True,
+                    seed=24,
+                    optimizer=optimizer,
+
+                    epochs=self.fitness_epochs,
+                    initial_points=3,
+                    hyper_maxepochs=1,
+                    hyper_iters=1
+                )
+                xtest = RNN.test_data
+                ytest = RNN.test_labels
+
+                if hyperoptimizer == 'random':
+                    tuner = RNN.random_search()
+                    best_model = tuner.get_best_models(num_models=1)[0]
+                    loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
+                    print('Completed random search\n')
+                elif hyperoptimizer == 'bayes':
+                    tuner = RNN.bayesian()
+                    best_model = tuner.get_best_models(num_models=1)[0]
+                    loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
+                    print('Completed bayesian\n')
+                elif hyperoptimizer == 'hyper':
+                    tuner = RNN.hyperband()
+                    best_model = tuner.get_best_models(num_models=1)[0]
+                    loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
+                    print('Completed hyperband\n')
 
             # tuner.search_space_summary()
 
@@ -387,8 +430,11 @@ class Learn_Master():
             self.input_dims[obj[0, 1]],
             self.curout_dim,
             optimizer=self.optimizers[obj[0, 5]],
+            nn_architecture = self.nn_architectures[obj[0, 6]],
             hyperoptimizer=self.hyperoptimizers[obj[0, 7]]
         )
+
+
 
 
 
@@ -396,9 +442,19 @@ class Learn_Master():
         iter = 0
 
         while iter < self.maxiter:
+
+            import time
             #  and diff > self.mindiff:
-            if iter % 10:
-                print(f'Begin iteration {iter}')
+            if iter % 100:
+                t = time.localtime()
+                now = time.strftime("%H:%M:%S", t)
+                print('-----------------------------------------------------------------------------------------------')
+                print('-----------------------------------------------------------------------------------------------')
+                print('-----------------------------------------------------------------------------------------------')
+                print(f'Begin iteration {iter} at {now}')
+                print('-----------------------------------------------------------------------------------------------')
+                print('-----------------------------------------------------------------------------------------------')
+                print('-----------------------------------------------------------------------------------------------')
             changeflag = 0
             mesh = self.make_mesh(obj)
             mesh = self.enforce_bounds(mesh)
@@ -412,6 +468,7 @@ class Learn_Master():
                     self.input_dims[mesh[ii, 1]],
                     self.curout_dim,
                     optimizer=self.optimizers[mesh[ii, 5]],
+                    nn_architecture=self.nn_architectures[mesh[ii, 6]],
                     hyperoptimizer=self.hyperoptimizers[mesh[ii, 7]]
                 )
 
@@ -423,6 +480,7 @@ class Learn_Master():
                     best_tuner = tuner
                     changeflag = 1
                     if train_for > 0:
+                        start = time.time()
                         results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=n_nulls)
                         master_dict[dict_template+f'{count}'] = results
                         count += 1
@@ -443,6 +501,7 @@ class Learn_Master():
                         self.input_dims[objnew[0, 1]],
                         self.curout_dim,
                         optimizer=self.optimizers[objnew[0, 5]],
+                        nn_architecture=self.nn_architectures[objnew[0, 6]],
                         hyperoptimizer=self.hyperoptimizers[objnew[0, 7]]
                     )
                     mesh = self.make_mesh(objnew)
@@ -453,9 +512,11 @@ class Learn_Master():
                         self.build_objdataset(mesh[ii, :])
 
                         meshfit, meshmod, tuner = self.ff_fitness(
+
                             self.input_dims[mesh[ii, 1]],
                             self.curout_dim,
                             optimizer=self.optimizers[mesh[ii, 5]],
+                            nn_architecture=self.nn_architectures[mesh[ii, 6]],
                             hyperoptimizer=self.hyperoptimizers[mesh[ii, 7]]
                         )
                         if meshfit < curfit:
@@ -465,9 +526,12 @@ class Learn_Master():
                             best_model = meshmod
                             best_tuner = tuner
                             if train_for > 0:
+                                end = time.time()
                                 results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=n_nulls)
                                 master_dict[dict_template + f'{count}'] = results
                                 count += 1
+
+                                print(f'New center took {(end-start)/3600} hours')
 
             else:
                 mu = mu - self.delta
@@ -486,6 +550,9 @@ class Learn_Master():
     def build_null_labels(self, labs, proj, num_nulls):
         nullset = np.empty(labs.shape)
         null_arr = np.empty((labs.shape[0], labs.shape[1], num_nulls))
+
+        if proj.shape[1] != labs.shape[1]:
+            proj = proj.T
         for num in range(num_nulls):
             for ii in range(len(nullset)):
                 ri = np.random.randint(0, len(proj))
@@ -501,9 +568,9 @@ class Learn_Master():
         obj = self.build_objdataset(objectives)
 
         dimsout = self.output_dims[obj[0, 2]]
-        if num_nulls == 0:
+        if num_nulls != 0:
             null_labels = self.build_null_labels(self.test_labels,
-                                             self.ordered_labels,
+                                             self.projections[obj[0, 2]],
                                              num_nulls
                                              )
             resnull = np.empty((dimsout, train_epochs, num_nulls))
@@ -671,8 +738,8 @@ if __name__ == '__main__':
         with open(v, 'rb') as f:
             vocab.append(pickle.load(f))
 
-    input_dims = [2, 10, 30, 50, 2]
-    output_dims = [2, 3, 10] # greatly increases computation time
+    input_dims = [2, 3, 5, 10, 20, 30, 40, 50, 2]
+    output_dims = [2, 3, 4, 5, 6, 7, 8, 9, 10] # greatly increases computation time
 
     model_paths = []
     for ii in range(output_dims[-1]):
@@ -681,15 +748,27 @@ if __name__ == '__main__':
         else:
             model_paths.append(Path(f'C:\\Users\\liqui\\PycharmProjects\\Generation_of_Novel_Metastimulus\\Lib\\Learn-Master\\optimized-models\\model_0{ii}'))
 
+    def fibonacci(n):
+        fib = [1, 1]
+        for ii in range(1, n):
+            fib.append(fib[ii-1] + fib[ii])
 
+        fib.remove(1) # removes first 1
+        return fib
 
-    weighting_factor = [1, 5, 25, 125, 625]
+    weighting_factor = fibonacci(20)
 
     optimizers = ['sgd', 'adam', 'adagrad', 'rmsprop', 'adadelta', 'adamax']
 
     label_paths = [
         Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_2Dims.pkl'),
         Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_3dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_4dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_5dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_6dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_7dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_8dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_9dims.pkl'),
         Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_10Dims.pkl')
                    ]
     labels = []
@@ -697,16 +776,38 @@ if __name__ == '__main__':
         with open(la, 'rb') as f:
             labels.append(pickle.load(f))
 
+    proj_paths = [
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_2dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_3dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_4dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_5dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_6dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_7dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_8dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_9dims.pkl'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_10dims.pkl'),
+    ]
+    projections = []
+    for pr in proj_paths:
+        with open(pr, 'rb') as f:
+            projections.append(pickle.load(f))
+
 
 
 
     we_model_paths = [
         Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_2dims'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_3dims'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_5dims'),
         Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_10dims'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_20dims'),
         Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_30dims'),
+        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_40dims'),
         Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_50dims'),
         Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Scientific-Articles\sciart_model')
     ]
+
+
 
 
 
@@ -724,7 +825,7 @@ if __name__ == '__main__':
 
     ints = [0, 1, 2, 3, 4, 5, 6, 7]
 
-    nn_arch = ['ff']
+    nn_arch = ['ff', 'rnn']
     curdim = 0
     LM = Learn_Master(
         doc_dict,
@@ -740,23 +841,25 @@ if __name__ == '__main__':
         nn_arch,
         hyperoptimizers,
         ints,
-        curout_dim=curdim,
-        epochs = 1,
+        projections,
+        # curout_dim=curdim,
+        epochs = 100,
         mu0=4,
         alpha=1,
         delta=1,
-        maxiter=10,
+        maxiter=100,
         savepath_model=model_paths,
+        rnn_steps=3,
     )
 
-    with open(Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Learn-Master\optimized-models\results.pkl'), 'rb') as f:
-        optimization_results = pickle.load(f)
+    # with open(Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Learn-Master\optimized-models\results.pkl'), 'rb') as f:
+    #     optimization_results = pickle.load(f)
 
-    # optimization_results = dict()
+    optimization_results = dict()
     results = dict()
 
     dict_template = 'improved_meta_set'
-    objectives, tuner, model, optimization_results['optimizing'] = LM.PS_integer(train_for=10, dict_template=dict_template, master_dict=results, n_nulls=0)
+    objectives, tuner, model, optimization_results['optimizing'] = LM.PS_integer(train_for=500, dict_template=dict_template, master_dict=results, n_nulls=50)
 
     with open(Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Learn-Master\optimized-models\results.pkl'), 'wb') as f:
         pickle.dump(optimization_results, f)
