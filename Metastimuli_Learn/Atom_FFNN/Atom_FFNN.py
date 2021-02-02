@@ -193,7 +193,18 @@ class Atom_FFNN:
 
     def splice_labels(self, labels, dim):
         try:
-            labs = labels[:, dim]
+            if labels.ndim == 1:
+                labs = labels
+            elif labels.ndim == 2:
+                labs = labels[:, dim]
+            elif labels.ndim == 3:
+                labs = labels[:, dim, :]
+            else:
+                print('----------------------------------------------------------------')
+                print('----------------------------------------------------------------')
+                print(f'function splice_labels not compatible with {labels.ndim} dimensional arrays')
+                print('----------------------------------------------------------------')
+                print('----------------------------------------------------------------')
         except:
             labs = None
         return labs
@@ -320,7 +331,7 @@ class Atom_FFNN:
             return result[0], result[1]
         else:
             print(f'Test results: Loss= {result[0]:.3f}')
-            return result
+            return result[0]
 
     def test_nullset(self):
         try:
@@ -335,7 +346,7 @@ class Atom_FFNN:
             return result[0], result[1]
         else:
             print(f'Nulltest results: Loss= {result[0]:.3f}')
-            return result
+            return result[0]
 
 
 

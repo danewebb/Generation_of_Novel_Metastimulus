@@ -95,7 +95,7 @@ class Atom_RNN():
             with open(test_label_path, 'rb') as test_label_file:
                 self.test_labels = pickle.load(test_label_file)
 
-            self.test_labels = np.asarray(self.test_labels)
+            self.test_labels_full = np.asarray(self.test_labels)
             if isinstance(self.test_labels, list):
                 self.test_labels = self.data_to_numpy(self.test_labels, self.output_size)
         elif test is not None:
@@ -107,7 +107,7 @@ class Atom_RNN():
 
         if train_label_path != '':
             with open(train_label_path, 'rb') as train_label_file:
-                self.train_labels = pickle.load(train_label_file)
+                self.train_labels_full = pickle.load(train_label_file)
             self.train_labels = np.asarray(self.train_labels)
             if isinstance(self.train_labels, list):
                 self.train_labels = self.data_to_numpy(self.train_labels, self.output_size)
@@ -132,9 +132,12 @@ class Atom_RNN():
                 self.nullset_labels = self.data_to_numpy(self.nullset_labels, self.output_size)
         elif nullset is not None:
             self.nullset = nullset
-            self.nullset_labels = nullset_labels
+            self.nullset_labels_full = nullset_labels
 
-        self.nullset_labels = self.splice_labels(self.nullset_labels, self.curdim)
+        try:
+            self.nullset_labels = self.splice_labels(self.nullset_labels, self.curdim)
+        except:
+            self.nullset_labels = None
 
         # self.data = self.data.T
         self.data = self.stepify(self.data, boollabels=False)
@@ -196,7 +199,18 @@ class Atom_RNN():
 
     def splice_labels(self, labels, dim):
         try:
-            labs = labels[:, dim, :]
+            if labels.ndim == 1:
+                labs = labels
+            elif labels.ndim == 2:
+                labs = labels[:, dim]
+            elif labels.ndim == 3:
+                labs = labels[:, dim, :]
+            else:
+                print('----------------------------------------------------------------')
+                print('----------------------------------------------------------------')
+                print(f'function splice_labels not compatible with {labels.ndim} dimensional arrays')
+                print('----------------------------------------------------------------')
+                print('----------------------------------------------------------------')
         except:
             labs = None
         return labs
@@ -257,7 +271,7 @@ class Atom_RNN():
             # layers.Dense(30, input_shape=(30,self.steps)),
             layers.SimpleRNN(
                 units=240,
-                input_shape=(30, self.steps),
+                input_shape=(self.input_size, self.steps),
                 # batch_size=self.batch_size,
                 kernel_initializer=winit,
                 bias_initializer=binit,
@@ -280,6 +294,7 @@ class Atom_RNN():
         return model
 
     def build_classification_model(self):
+        print('Not compatible yet')
         winit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
         binit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
         model = keras.Sequential([
@@ -359,7 +374,7 @@ class Atom_RNN():
 
         model.add(layers.SimpleRNN(
             hp.Int('rnn_units', min_value=self.input_min, max_value=self.input_max, step=self.input_step),
-            input_shape=(30, self.steps),
+            input_shape=(self.input_size, self.steps),
             activation=hp.Choice('rnn_activation', values=['tanh', 'sigmoid', 'softmax'])
         ))
 
@@ -542,7 +557,7 @@ class Atom_RNN():
             return result[0], result[1]
         else:
             print(f'Nulltest results: Loss= {result[0]:.3f}')
-            return result
+            return result[0]
 
 if __name__ == '__main__':
     with tf.device('/cpu:0'):

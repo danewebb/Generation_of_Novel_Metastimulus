@@ -12,6 +12,8 @@ import pickle
 
 # tfds.disable_progress_bar()
 
+# import os
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 class Sciart_Word_Embedding:
 
@@ -36,7 +38,7 @@ class Sciart_Word_Embedding:
             self.data_chunks = data_chunks
         elif data:
             self.data = data
-        if vocab_path == '' or not os.path.exists(vocab_path):
+        if vocab_path == '':
             # get vocab_size from 'sciart_vocab.pkl'
             raise ValueError('vocab_path does not exist')
         else:
@@ -64,7 +66,7 @@ class Sciart_Word_Embedding:
             # load different model
             self.model = keras.models.load_model(model_path)
 
-        if save_model_path == '' or not os.path.exists(save_model_path):
+        if save_model_path == '':
             self.save_model_path == ''
             Warning('save_model_path is undefined. This will result in the model not saving.')
         else:
@@ -86,8 +88,8 @@ class Sciart_Word_Embedding:
 
         for num, word in enumerate(self.vocab[1:], start=1): # Int 0 is in index 0 of vocab
             vec = weights[num]
-            out_m.write(word + "\n")
-            out_v.write('\t'.join([str(x) for x in vec]) + "\n")
+            out_m.write(word + "/n")
+            out_v.write('/t'.join([str(x) for x in vec]) + "/n")
 
         # save
         out_v.close()
@@ -95,11 +97,11 @@ class Sciart_Word_Embedding:
 
     def data_to_numpy(self, data):
         # make encoded data into numpy arrays
-        train_data_arr = np.array([np.array(x) for x in data])  # turns list into a np array
+        # train_data_arr = np.array([np.array(x) for x in data])  # turns list into a np array
 
         # array padding with zeros
         padded_train_data = keras.preprocessing.sequence.pad_sequences(
-            train_data_arr, padding='post'
+            data, padding='post'
         )
 
         tdata_size = padded_train_data.shape
@@ -189,17 +191,14 @@ class Sciart_Word_Embedding:
                     # if letter is a space, everything previous makes up a word
                     if let == ' ':
                         word = ''.join(word_store)
-                        clean_word = self.word_cleaner(word)
+                        # clean_word = self.word_cleaner(word)
                         word_store = []
 
-                        for idx, w in enumerate(vocab):
-                            if w == clean_word:
+                        for idx, w in enumerate(self.vocab):
+                            if w == word:
                                 para_vec.append(idx)
                                 break
-                            elif w == word:
-                                para_vec.append(idx)
-                                break
-                            elif idx == len(vocab) - 1:
+                            elif idx == len(self.vocab) - 1:
                                 para_vec.append(0)
                                 break
 
@@ -212,37 +211,52 @@ class Sciart_Word_Embedding:
 
 if __name__ == '__main__':
     with tf.device('/cpu:0'):
-        epochs = 12
-        report_every = 1
+        epochs = 10000
+        report_every = 100
         # data_chunks = [r'Lib/sciart_wordembedding/sciart_data_01.pkl', r'Lib/sciart_wordembedding/sciart_data_02.pkl', r'Lib/sciart_wordembedding/sciart_data_03.pkl',
         #                r'Lib/sciart_wordembedding/sciart_data_04.pkl', r'Lib/sciart_wordembedding/sciart_data_05.pkl', r'Lib/sciart_wordembedding/sciart_data_06.pkl',
         #                r'Lib/sciart_wordembedding/sciart_data_07.pkl', r'Lib/sciart_wordembedding/sciart_data_08.pkl', r'Lib/sciart_wordembedding/sciart_data_09.pkl',
         #                r'Lib/sciart_wordembedding/sciart_data_10.pkl', r'Lib/sciart_wordembedding/sciart_data_11.pkl', r'Lib/sciart_wordembedding/sciart_data_12.pkl']
 
-        data_chunks = [r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_data_folder\sciart_data_01.pkl',
-                       r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_data_folder\sciart_data_02.pkl',
-                       r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_data_folder\sciart_data_03.pkl',
-                       r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_data_folder\sciart_data_04.pkl',
-                       r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_data_folder\sciart_data_05.pkl',
-                       r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_data_folder\sciart_data_06.pkl',
-                       r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_data_folder\sciart_data_07.pkl',
-                       r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_data_folder\sciart_data_08.pkl',
-                       r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_data_folder\sciart_data_09.pkl',
-                       r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_data_folder\sciart_data_10.pkl',
-                       r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_data_folder\sciart_data_11.pkl',
-                       r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_data_folder\sciart_data_12.pkl'
+        data_chunks = ['/pylon5/ss48n7p/danewebb/sciart_data_folder/sciart_data_01.pkl',
+                       '/pylon5/ss48n7p/danewebb/sciart_data_folder/sciart_data_02.pkl',
+                       '/pylon5/ss48n7p/danewebb/sciart_data_folder/sciart_data_03.pkl',
+                       '/pylon5/ss48n7p/danewebb/sciart_data_folder/sciart_data_04.pkl',
+                       '/pylon5/ss48n7p/danewebb/sciart_data_folder/sciart_data_05.pkl',
+                       '/pylon5/ss48n7p/danewebb/sciart_data_folder/sciart_data_06.pkl',
+                       '/pylon5/ss48n7p/danewebb/sciart_data_folder/sciart_data_07.pkl',
+                       '/pylon5/ss48n7p/danewebb/sciart_data_folder/sciart_data_08.pkl',
+                       '/pylon5/ss48n7p/danewebb/sciart_data_folder/sciart_data_09.pkl',
+                       '/pylon5/ss48n7p/danewebb/sciart_data_folder/sciart_data_10.pkl',
+                       '/pylon5/ss48n7p/danewebb/sciart_data_folder/sciart_data_11.pkl',
+                       '/pylon5/ss48n7p/danewebb/sciart_data_folder/sciart_data_12.pkl'
         ]
+        # data_chunks = ['../../../../Word_Embeddings/Lib/sciart_data_folder/sciart_data_01.pkl',
+        #                '../../../../Word_Embeddings/Lib/sciart_data_folder/sciart_data_02.pkl',
+        #                '../../../../Word_Embeddings/Lib/sciart_data_folder/sciart_data_03.pkl',
+        #                '../../../../Word_Embeddings/Lib/sciart_data_folder/sciart_data_04.pkl',
+        #                '../../../../Word_Embeddings/Lib/sciart_data_folder/sciart_data_05.pkl',
+        #                '../../../../Word_Embeddings/Lib/sciart_data_folder/sciart_data_06.pkl',
+        #                '../../../../Word_Embeddings/Lib/sciart_data_folder/sciart_data_07.pkl',
+        #                '../../../../Word_Embeddings/Lib/sciart_data_folder/sciart_data_08.pkl',
+        #                '../../../../Word_Embeddings/Lib/sciart_data_folder/sciart_data_09.pkl',
+        #                '../../../../Word_Embeddings/Lib/sciart_data_folder/sciart_data_10.pkl',
+        #                '../../../../Word_Embeddings/Lib/sciart_data_folder/sciart_data_11.pkl',
+        #                '../../../../Word_Embeddings/Lib/sciart_data_folder/sciart_data_12.pkl'
+        # ]
 
-        SWE = Sciart_Word_Embedding(data_chunks, model_path=r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_wordembedding\sciart_model',
-                                    vocab_path=r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_wordembedding\sciart_vocab.pkl',
-                                    save_model_path=r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_wordembedding\sciart_model')
+
+        SWE = Sciart_Word_Embedding(data_chunks=data_chunks,
+                                    vocab_path='sciart_vocab.pkl',
+                                    save_model_path='sciart_model_dim02',
+                                    embedding_dim=2)
 
 
 
 
         start_time = time.time()
         for ii in range(1, epochs+1):
-            SWE.main()
+            SWE.main_train()
             if ii%report_every == 0:
                 end_time = time.time()
                 print(f'{ii}/{epochs} completed')
@@ -252,10 +266,10 @@ if __name__ == '__main__':
                 eta = elapsed_time*reports_left/3600 ### Hours
                 print(f'Finished epoch {ii} at {time.asctime(time.localtime(time.time()))}')
                 print(f'Estimated time to completion: {eta} hours')
-                print('\n')
+                print('/n')
                 start_time = end_time
 
 
-    SWE.retrieve_word_embeddings(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\sciart_wordembedding\sciart_model') # extract word embeddings
+    # SWE.retrieve_word_embeddings('sciart_wordembedding/sciart_model_dim2', ) # extract word embeddings
 
 

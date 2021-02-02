@@ -1,26 +1,33 @@
-from atom_tag_pairing import Atom_Tag_Pairing
-from atom_embedding import Atom_Embedder
-from Atom_FFNN import Atom_FFNN
-from Atom_RNN import Atom_RNN
-# from word_embedding_ricocorpus import word_embedding_ricocorpus
+import sys
+sys.path.append("..") # Adds higher directory to python modules path.
+import os
+script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
+up_dir = os.path.join(script_dir, '..')
+
+# from atom_tag_pairing import Atom_Tag_Pairing
+
+
+from ..Atom_Embeddings.atom_embedding import Atom_Embedder
+from ..Metastimuli_Learn.Atom_FFNN.Atom_FFNN import Atom_FFNN
+from ..Metastimuli_Learn.Atom_RNN.Atom_RNN import Atom_RNN
+from ..Word_Embeddings.Weighting_Keywords import Weighting_Keyword
+# fromword_embedding_ricocorpus import word_embedding_ricocorpus
 # from word_embedding import Sciart_Word_Embedding
-from Randomizer import Shuffler
+from ..Shuffled_Data_1.Randomizer import Shuffler
 
 from pathlib import Path
-from Process_sciart import Process_Sciart
-from Label_Text_Builder import Label_Text_Builder
-from Processing import Tex_Processing
+# from Process_sciart import Process_Sciart
+# from Label_Text_Builder import Label_Text_Builder
+# from Processing import Tex_Processing
 
 # PIMS filter import
 import numpy as np
 import pickle
-import os
 import tensorflow as tf
 from tensorflow import keras
 import keras.layers as layers
 
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 class Learn_Master():
@@ -125,7 +132,8 @@ class Learn_Master():
         if savepath_model is not None:
             self.savepath_model = savepath_model
         else:
-            self.savepath_model = Path(f'untitled_model_dim{self.curout_dim}')
+            self.savepath_model = "optimized_models/untitled_model_dim{dim}".format(dim = self.curout_dim)
+            # self.savepath_model = "optimized_models/untitled_model_dim"
 
         if projections is not None:
             self.projections = projections
@@ -156,7 +164,7 @@ class Learn_Master():
         :return:
         """
 
-        from Weighting_Keywords import Weighting_Keyword
+
         if objectives.ndim == 1:
             obj = objectives.astype(int)
             obj = np.reshape(obj, (1, len(obj)))
@@ -209,8 +217,7 @@ class Learn_Master():
     def atom_embedding(self, atom_embed_method, we_model, vocab, key_weight, ordered_encdata, ndel=8):
         atom_vecs = []
 
-        from atom_embedding import Atom_Embedder
-        from Weighting_Keywords import Weighting_Keyword
+
 
         AE = Atom_Embedder(we_model.layers[0].get_weights()[0], vocab)
         WK = Weighting_Keyword(vocab, key_weight)
@@ -245,8 +252,8 @@ class Learn_Master():
 
     #     elif atom_embed_method == 'SIF'
 
-        # with open(Path(f'C:\\Users\\liqui\\PycharmProjects\\Generation_of_Novel_Metastimulus\\Lib\\Atom-Embeddings\\'
-        #                f'embeddings\\{we_embed}_w{self.keyword_weigth_factor}_in{atom_vecs[0].shape[0]}_{atom_embed_method}.pkl'),
+        # with open(Path(f'C://Users//liqui//PycharmProjects//Generation_of_Novel_Metastimulus///Atom-Embeddings//'
+        #                f'embeddings//{we_embed}_w{self.keyword_weigth_factor}_in{atom_vecs[0].shape[0]}_{atom_embed_method}.pkl'),
         #           'wb') as f:
         #     pickle.dump(atom_vecs, f)
 
@@ -296,17 +303,17 @@ class Learn_Master():
                     tuner = AFF.random_search()
                     best_model = tuner.get_best_models(num_models=1)[0]
                     loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
-                    print('Completed random search\n')
+                    print('Completed random search/n')
                 elif hyperoptimizer == 'bayes':
                     tuner = AFF.bayesian()
                     best_model = tuner.get_best_models(num_models=1)[0]
                     loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
-                    print('Completed bayesian\n')
+                    print('Completed bayesian/n')
                 elif hyperoptimizer == 'hyper':
                     tuner = AFF.hyperband()
                     best_model = tuner.get_best_models(num_models=1)[0]
                     loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
-                    print('Completed hyperband\n')
+                    print('Completed hyperband/n')
             else:
                 RNN = Atom_RNN(
                     data=self.ordtrain,
@@ -323,7 +330,7 @@ class Learn_Master():
                     optimize=True,
                     seed=24,
                     optimizer=optimizer,
-
+                    steps=self.rnn_steps,
                     epochs=self.fitness_epochs,
                     initial_points=3,
                     hyper_maxepochs=1,
@@ -336,17 +343,17 @@ class Learn_Master():
                     tuner = RNN.random_search()
                     best_model = tuner.get_best_models(num_models=1)[0]
                     loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
-                    print('Completed random search\n')
+                    print('Completed random search/n')
                 elif hyperoptimizer == 'bayes':
                     tuner = RNN.bayesian()
                     best_model = tuner.get_best_models(num_models=1)[0]
                     loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
-                    print('Completed bayesian\n')
+                    print('Completed bayesian/n')
                 elif hyperoptimizer == 'hyper':
                     tuner = RNN.hyperband()
                     best_model = tuner.get_best_models(num_models=1)[0]
                     loss = best_model.evaluate(xtest, ytest)  # list[mse loss, mse]
-                    print('Completed hyperband\n')
+                    print('Completed hyperband/n')
 
             # tuner.search_space_summary()
 
@@ -451,7 +458,7 @@ class Learn_Master():
                 print('-----------------------------------------------------------------------------------------------')
                 print('-----------------------------------------------------------------------------------------------')
                 print('-----------------------------------------------------------------------------------------------')
-                print(f'Begin iteration {iter} at {now}')
+                print('Begin iteration {i} at {n}'.format(i = iter, n = now))
                 print('-----------------------------------------------------------------------------------------------')
                 print('-----------------------------------------------------------------------------------------------')
                 print('-----------------------------------------------------------------------------------------------')
@@ -479,10 +486,11 @@ class Learn_Master():
                     best_model = meshmod
                     best_tuner = tuner
                     changeflag = 1
+                    start = time.time()
                     if train_for > 0:
-                        start = time.time()
+
                         results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=n_nulls)
-                        master_dict[dict_template+f'{count}'] = results
+                        master_dict[dict_template+'{count}'.format(count=count)] = results
                         count += 1
 
 
@@ -528,20 +536,20 @@ class Learn_Master():
                             if train_for > 0:
                                 end = time.time()
                                 results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=n_nulls)
-                                master_dict[dict_template + f'{count}'] = results
+                                master_dict[dict_template + '{count}'.format(count=count)] = results
                                 count += 1
 
-                                print(f'New center took {(end-start)/3600} hours')
+                                print('New center took {time} hours'.format(time = (end-start)/3600))
 
             else:
                 mu = mu - self.delta
                 iter += 1
 
-            print(f'Minimum fitness is {curfit}')
+            print('Minimum fitness is {curfit}'.format(curfit=curfit))
 
-        print(f'Optimal hyperparameters')
+        print('Optimal hyperparameters')
         for ii in range(len(obj)):
-            print(f'{ii} == {obj[0, ii]}')
+            print('{ii} == {objs}'.format(ii=ii, objs=obj[0, ii]))
 
 
         return obj, best_tuner, best_model, master_dict
@@ -574,6 +582,8 @@ class Learn_Master():
                                              num_nulls
                                              )
             resnull = np.empty((dimsout, train_epochs, num_nulls))
+
+
         else:
             null_labels = None
 
@@ -582,6 +592,9 @@ class Learn_Master():
 
         if obj[0, 6] == 0:
             for dim in range(dimsout):
+                print('---------------------------------------------------------------------------------------------')
+                print('Starting dimension {dim}'.format(dim=dim))
+                print('---------------------------------------------------------------------------------------------')
                 FF = Atom_FFNN(
                     data=self.train,
                     train_labels=self.train_labels,
@@ -598,7 +611,7 @@ class Learn_Master():
                 )
                 FF.save_model()
                 for ep in range(train_epochs):
-
+                    print('Epoch: {ep}/{train_epochs}'.format(ep=ep, train_epochs=train_epochs))
                     FF = Atom_FFNN(
                         data=self.train,
                         train_labels=self.train_labels,
@@ -618,17 +631,17 @@ class Learn_Master():
                     trloss = history.history['loss']
                     restr[dim, ep] = trloss[0]
                     FF.save_model()
-                    reste[dim, ep], _ = FF.test()
+                    reste[dim, ep] = FF.test()
 
                     if num_nulls > 0:
                         for jj in range(num_nulls):
-                            AFF = Atom_FFNN(
+                            FF = Atom_FFNN(
                                 data=self.train,
                                 train_labels=self.train_labels,
                                 test=self.test,
                                 test_labels=self.test_labels,
                                 nullset=self.test,
-                                nullset_labels=null_labels[1, :, jj],
+                                nullset_labels=null_labels[:, :, jj],
                                 current_dim=dim,
                                 model_path=self.savepath_model[dim],
                                 save_model_path=self.savepath_model[dim],
@@ -636,11 +649,14 @@ class Learn_Master():
                                 regression=True,
                                 epochs=1,
                             )
-                            resnull[dim, ep, jj], _ = AFF.test_nullset()
+                            resnull[dim, ep, jj] = FF.test_nullset()
                     keras.backend.clear_session()
 
         else:
             for dim in range(dimsout):
+                print('---------------------------------------------------------------------------------------------')
+                print('Starting dimension {dim}'.format(dim=dim))
+                print('---------------------------------------------------------------------------------------------')
                 RNN = Atom_RNN(
                     data=self.ordtrain,
                     train_labels=self.ordtrain_labels,
@@ -658,7 +674,8 @@ class Learn_Master():
                 )
                 RNN.save_model()
 
-                for ep in train_epochs:
+                for ep in range(train_epochs):
+                    print('Epoch: {ep}/{train_epochs}'.format(ep=ep, train_epochs=train_epochs))
                     RNN = Atom_RNN(
                         data=self.ordtrain,
                         train_labels=self.ordtrain_labels,
@@ -679,7 +696,7 @@ class Learn_Master():
                     trloss = history.history['loss']
                     restr[dim, ep] = trloss[0]
                     RNN.save_model()
-                    reste[dim, ep], _ = RNN.test()
+                    reste[dim, ep] = RNN.test()
                     if num_nulls > 0:
                         for jj in range(num_nulls):
                             RNN = Atom_RNN(
@@ -697,7 +714,7 @@ class Learn_Master():
                                 regression=True,
                                 epochs=1,
                             )
-                            resnull[dim, ep, jj], _ = RNN.test_nullset()
+                            resnull[dim, ep, jj] = RNN.test_nullset()
                     keras.backend.clear_session()
 
 
@@ -710,19 +727,17 @@ class Learn_Master():
 if __name__ == '__main__':
 
 
-
-
-    paras_path = Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\raw_ricoparas.pkl')
+    paras_path = os.path.join(up_dir,'Misc_Data/raw_ricoparas.pkl')
     with open(paras_path, 'rb') as f:
         paras = pickle.load(f)
 
-    doc_dict_path = Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\doc_dict.pkl')
+    doc_dict_path = os.path.join(up_dir,'Misc_Data/doc_dict.pkl')
     with open(doc_dict_path, 'rb') as f:
         doc_dict = pickle.load(f)
 
     encoded_data_paths = [
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data_01.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Scientific-Articles\ricocorpus_sciart_encoded.pkl')
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/encoded_data_01.pkl'),
+        os.path.join(up_dir,'Word_Embeddings/Scientific-Articles/ricocorpus_sciart_encoded.pkl')
     ]
     encoded_data = []
     for en in encoded_data_paths:
@@ -730,8 +745,8 @@ if __name__ == '__main__':
             encoded_data.append(pickle.load(f))
 
     vocab_paths = [
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ranked_vocab.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Scientific-Articles\sciart_vocab.pkl')
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/ranked_vocab.pkl'),
+        os.path.join(up_dir,'Word_Embeddings/Scientific-Articles/sciart_vocab.pkl')
     ]
     vocab = []
     for v in vocab_paths:
@@ -744,9 +759,9 @@ if __name__ == '__main__':
     model_paths = []
     for ii in range(output_dims[-1]):
         if len(range(output_dims[-1])) >= 100:
-            model_paths.append(Path(f'C:\\Users\\liqui\\PycharmProjects\\Generation_of_Novel_Metastimulus\\Lib\\Learn-Master\\optimized-models\\model_00{ii}'))
+            model_paths.append(os.path.join(up_dir, 'Learn_Master/optimized-models/model_00{ii}'.format(ii=ii)))
         else:
-            model_paths.append(Path(f'C:\\Users\\liqui\\PycharmProjects\\Generation_of_Novel_Metastimulus\\Lib\\Learn-Master\\optimized-models\\model_0{ii}'))
+            model_paths.append(os.path.join(up_dir, 'Learn_Master/optimized-models/model_0{ii}'.format(ii=ii)))
 
     def fibonacci(n):
         fib = [1, 1]
@@ -761,15 +776,15 @@ if __name__ == '__main__':
     optimizers = ['sgd', 'adam', 'adagrad', 'rmsprop', 'adadelta', 'adamax']
 
     label_paths = [
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_2Dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_3dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_4dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_5dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_6dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_7dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_8dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_9dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Full_Ordered_Labels_10Dims.pkl')
+        os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_2Dims.pkl'),
+        os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_3dims.pkl'),
+        os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_4dims.pkl'),
+        os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_5dims.pkl'),
+        os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_6dims.pkl'),
+        os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_7dims.pkl'),
+        os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_8dims.pkl'),
+        os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_9dims.pkl'),
+        os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_10Dims.pkl')
                    ]
     labels = []
     for la in label_paths:
@@ -777,15 +792,15 @@ if __name__ == '__main__':
             labels.append(pickle.load(f))
 
     proj_paths = [
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_2dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_3dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_4dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_5dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_6dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_7dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_8dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_9dims.pkl'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\Projection_10dims.pkl'),
+        os.path.join(up_dir,'Misc_Data/Projection_2dims.pkl'),
+        os.path.join(up_dir,'Misc_Data/Projection_3dims.pkl'),
+        os.path.join(up_dir,'Misc_Data/Projection_4dims.pkl'),
+        os.path.join(up_dir,'Misc_Data/Projection_5dims.pkl'),
+        os.path.join(up_dir,'Misc_Data/Projection_6dims.pkl'),
+        os.path.join(up_dir,'Misc_Data/Projection_7dims.pkl'),
+        os.path.join(up_dir,'Misc_Data/Projection_8dims.pkl'),
+        os.path.join(up_dir,'Misc_Data/Projection_9dims.pkl'),
+        os.path.join(up_dir,'Misc_Data/Projection_10dims.pkl'),
     ]
     projections = []
     for pr in proj_paths:
@@ -796,15 +811,15 @@ if __name__ == '__main__':
 
 
     we_model_paths = [
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_2dims'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_3dims'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_5dims'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_10dims'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_20dims'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_30dims'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_40dims'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_50dims'),
-        Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Scientific-Articles\sciart_model')
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_2dims'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_3dims'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_5dims'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_10dims'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_20dims'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_30dims'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_40dims'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_50dims'),
+        os.path.join(up_dir,'Word_Embeddings/Scientific-Articles/sciart_model')
     ]
 
 
@@ -843,26 +858,34 @@ if __name__ == '__main__':
         ints,
         projections,
         # curout_dim=curdim,
-        epochs = 100,
+        epochs = 10,
         mu0=4,
         alpha=1,
         delta=1,
-        maxiter=100,
+        maxiter=10,
         savepath_model=model_paths,
         rnn_steps=3,
     )
 
-    # with open(Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Learn-Master\optimized-models\results.pkl'), 'rb') as f:
+    # with open(os.path.join(up_dir,'Learn-Master/optimized-models/results.pkl'), 'rb') as f:
     #     optimization_results = pickle.load(f)
 
     optimization_results = dict()
     results = dict()
 
     dict_template = 'improved_meta_set'
-    objectives, tuner, model, optimization_results['optimizing'] = LM.PS_integer(train_for=500, dict_template=dict_template, master_dict=results, n_nulls=50)
+    objectives, tuner, model, optimization_results['optimizing'] = LM.PS_integer(train_for=5, dict_template=dict_template, master_dict=results, n_nulls=50)
 
-    with open(Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Learn-Master\optimized-models\results.pkl'), 'wb') as f:
+    with open(os.path.join(up_dir,'Learn_Master/optimized-models/results.pkl'), 'wb') as f:
         pickle.dump(optimization_results, f)
+
+
+    with open(os.path.join(up_dir,'Learn_Master/best/objectives.pkl'), 'wb') as f:
+        pickle.dump(objectives, f)
+    with open(os.path.join(up_dir,'Learn_Master/best/tuner.pkl'), 'wb') as f:
+        pickle.dump(tuner, f)
+    with open(os.path.join(up_dir,'Learn_Master/best/model.pkl'), 'wb') as f:
+        pickle.dump(model, f)
 
 
 

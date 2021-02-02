@@ -1,10 +1,11 @@
 import numpy as np
-import os
+import sys
+sys.path.append("..") # Adds higher directory to python modules path.
 import pickle
 import tensorflow as tf
 from sklearn.decomposition import TruncatedSVD
 
-from Weighting_Keywords import Weighting_Keyword
+from Word_Embeddings.Weighting_Keywords import Weighting_Keyword
 
 
 class Atom_Embedder:
