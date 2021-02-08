@@ -12,7 +12,7 @@ import pickle
 
 # tfds.disable_progress_bar()
 
-# import os
+import os
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 class Sciart_Word_Embedding:

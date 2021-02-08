@@ -1,12 +1,14 @@
 import os
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import pickle
 import numpy as np
 import json
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
-from keras.utils import plot_model
-from matplotlib import pyplot as plt
+# import tensorflow as tf
+# from tensorflow import keras
+# from tensorflow.keras import layers
+import keras
+from keras import layers
+# from matplotlib import pyplot as plt
 
 from kerastuner.tuners import RandomSearch
 from kerastuner.tuners import BayesianOptimization
@@ -31,7 +33,7 @@ class Atom_RNN():
                  epsilon_step=1e-9,
                  rho_min=0.5, rho_max=0.95, rho_step=0.05,
                  max_trials=1, max_executions_per=1, initial_points=5, hyper_maxepochs=100, hyper_factor=3,
-                 hyper_iters=10,
+                 hyper_iters=10, kt_directory='untitled',
                  optimizer='sgd',
                  ):
 
@@ -57,7 +59,7 @@ class Atom_RNN():
         self.hyper_factor = hyper_factor; self.hyper_iters=hyper_iters
 
         self.optimizer = optimizer
-
+        self.kt_dir = kt_directory
         if data_path != '':
             try:
                 with open(data_path, 'rb') as data_file:
@@ -132,7 +134,7 @@ class Atom_RNN():
                 self.nullset_labels = self.data_to_numpy(self.nullset_labels, self.output_size)
         elif nullset is not None:
             self.nullset = nullset
-            self.nullset_labels_full = nullset_labels
+            self.nullset_labels = nullset_labels
 
         try:
             self.nullset_labels = self.splice_labels(self.nullset_labels, self.curdim)
@@ -265,8 +267,8 @@ class Atom_RNN():
 
 
     def build_regression_model(self):
-        winit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
-        binit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
+        winit = keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
+        binit = keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
         model = keras.Sequential([
             # layers.Dense(30, input_shape=(30,self.steps)),
             layers.SimpleRNN(
@@ -287,7 +289,7 @@ class Atom_RNN():
         model.compile(
 
             optimizer=sgd,
-            loss=tf.keras.losses.mean_squared_error,
+            loss=keras.losses.mean_squared_error,
             metrics=['mean_squared_error']
 
         )
@@ -295,8 +297,8 @@ class Atom_RNN():
 
     def build_classification_model(self):
         print('Not compatible yet')
-        winit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
-        binit = tf.keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
+        winit = keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
+        binit = keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=self.seed)
         model = keras.Sequential([
             layers.SimpleRNN(
                 units=self.units,
@@ -311,7 +313,7 @@ class Atom_RNN():
         model.compile(
 
             optimizer='adam',
-            loss=tf.keras.losses.categorical_crossentropy,
+            loss=keras.losses.categorical_crossentropy,
             metrics=['accuracy']
 
         )
@@ -406,6 +408,7 @@ class Atom_RNN():
             'val_mean_squared_error',
             self.max_trials,  # more than 2 and it crashes
             overwrite=True,
+            # directory=self.kt_dir
             # executions_per_trial=self.max_executions_per,
             # directory=dir,
             # project_name=name
@@ -432,6 +435,7 @@ class Atom_RNN():
             seed=self.seed,
             overwrite=True,
             # directory=dir,
+            # directory=self.kt_dir
         )
 
         tuner.search(
@@ -456,7 +460,9 @@ class Atom_RNN():
             # directory=dir,
             seed=self.seed,
             overwrite=True,
+            # directory=self.kt_dir
         )
+
 
         tuner.search(
             x=self.data,
@@ -480,7 +486,7 @@ class Atom_RNN():
                                            min_value=self.learn_rate_min, max_value=self.learn_rate_max,
                                            sampling='LOG'),
                     momentum=hp.Float('momentum', min_value=self.momentum_min, max_value=self.momentum_max, step=self.momentum_step)),
-                loss=tf.keras.losses.mean_squared_error,
+                loss=keras.losses.mean_squared_error,
                 metrics=['mean_squared_error'])
 
         elif self.optimizer == 'adam':
@@ -490,7 +496,7 @@ class Atom_RNN():
                                            min_value=self.learn_rate_min, max_value=self.learn_rate_max, sampling='LOG'),
                     beta_1=hp.Float('beta_1', min_value=self.beta1_min, max_value=self.beta1_max, step=self.beta1_step),
                     beta_2=hp.Float('beta_2', min_value=self.beta2_min, max_value=self.beta2_max, step=self.beta2_step)),
-                loss=tf.keras.losses.mean_squared_error,
+                loss=keras.losses.mean_squared_error,
                 metrics=['mean_squared_error'])
 
         elif self.optimizer == 'adagrad':
@@ -500,7 +506,7 @@ class Atom_RNN():
                                            min_value=self.learn_rate_min, max_value=self.learn_rate_max, sampling='LOG'),
                     initial_accumulator_value=hp.Float('initial_accumulator', min_value=self.initial_acc_min, max_value=self.initial_acc_max, step=self.initial_acc_step),
                     epsilon=hp.Float('epsilon', min_value=self.epsilon_min, max_value=self.epsilon_max, step=self.epsilon_step)),
-                loss=tf.keras.losses.mean_squared_error,
+                loss=keras.losses.mean_squared_error,
                 metrics=['mean_squared_error'])
 
         elif self.optimizer == 'rmsprop':
@@ -512,7 +518,7 @@ class Atom_RNN():
                     momentum=hp.Float('momentum', min_value=self.momentum_min, max_value=self.momentum_max, step=self.momentum_step),
                     epsilon=hp.Float('epsilon', min_value=self.epsilon_min, max_value=self.epsilon_max, step=self.epsilon_step)
                 ),
-                loss=tf.keras.losses.mean_squared_error,
+                loss=keras.losses.mean_squared_error,
                 metrics=['mean_squared_error'])
 
         elif self.optimizer == 'adadelta':
@@ -523,7 +529,7 @@ class Atom_RNN():
                     rho=hp.Float('rho', min_value=self.rho_min, max_value=self.rho_max, step=self.rho_step),
                     epsilon=hp.Float('epsilon', min_value=self.epsilon_min, max_value=self.epsilon_max, step=self.epsilon_step)
                 ),
-                loss=tf.keras.losses.mean_squared_error,
+                loss=keras.losses.mean_squared_error,
                 metrics=['mean_squared_error'])
 
         elif self.optimizer == 'adamax':
@@ -534,7 +540,7 @@ class Atom_RNN():
                     beta_1=hp.Float('beta_1', min_value=self.beta1_min, max_value=self.beta1_max, step=self.beta1_step),
                     beta_2=hp.Float('beta_2', min_value=self.beta2_min, max_value=self.beta2_max, step=self.beta2_step),
                     epsilon=hp.Float('epsilon', min_value=self.epsilon_min, max_value=self.epsilon_max, step=self.epsilon_step)),
-                loss=tf.keras.losses.mean_squared_error,
+                loss=keras.losses.mean_squared_error,
                 metrics=['mean_squared_error'])
 
         else:
@@ -560,7 +566,7 @@ class Atom_RNN():
             return result[0]
 
 if __name__ == '__main__':
-    with tf.device('/cpu:0'):
+    # with tf.device('/cpu:0'):
         trbatch_size = 5
         tebatch_size = 1
         inner_epochs = 1

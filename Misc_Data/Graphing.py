@@ -258,20 +258,133 @@ def multi_part(trloss, teloss, nuloss):
     plt.show()
 
 
+def plot_metaloss(train, test, title, colors, x, y, null=None, linestyles = None, order=None, dim=0, merge=False):
+    ep = range(train[0].shape[1])
+    shift = range(1, len(ep)+1)
+
+    for ii in range(len(train)):
+        tr = train[ii]; te = test[ii]; nu = null[ii]
+        nu = np.average(nu, axis=2)
+        title = title.format(dim=dim, ii=ii)
+        try:
+            if linestyles is None:
+                plt.semilogy(ep, tr[dim, :], label='Train')
+                plt.semilogy(shift, te[dim, :], label='Test')
+                plt.semilogy(shift, nu[dim, :], label='Nullset')
+                plt.title(title)
+                plt.xlabel('Epochs')
+                plt.ylabel('Loss')
+                plt.legend()
+                if not merge:
+                    plt.show()
+            else:
+                plt.semilogy(ep, tr[dim, :], color=colors[0], linestyle=linestyles[0], zorder=order[0], label='Train')
+                plt.semilogy(shift, te[dim, :], color=colors[1], linestyle=linestyles[1], zorder=order[1], label='Test')
+                plt.semilogy(shift, nu[dim, :], color=colors[2], linestyle=linestyles[2], zorder=order[2], label='Nullset')
+                plt.title(title)
+                plt.xlabel(x)
+                plt.ylabel(y)
+                plt.legend()
+                if not merge:
+                    plt.show()
+        except:
+            print('More dimensions than available for some of the data')
+            if linestyles is None:
+                plt.semilogy(ep, tr[-1, :], label='Train')
+                plt.semilogy(shift, te[-1, :], label='Test')
+                plt.semilogy(shift, nu[-1, :], label='Nullset')
+                plt.title(title)
+                plt.xlabel('Epochs')
+                plt.ylabel('Loss')
+                plt.legend()
+                if not merge:
+                    plt.show()
+            else:
+                plt.semilogy(ep, tr[-1, :], color=colors[0], linestyle=linestyles[0], zorder=order[0], label='Train')
+                plt.semilogy(shift, te[-1, :], color=colors[1], linestyle=linestyles[1], zorder=order[1], label='Test')
+                plt.semilogy(shift, nu[-1, :], color=colors[2], linestyle=linestyles[2], zorder=order[2], label='Nullset')
+                plt.title(title)
+                plt.xlabel(x)
+                plt.ylabel(y)
+                plt.legend()
+                if not merge:
+                    plt.show()
+    plt.show()
+
+def plot_final_loss(train, test, title, x, y, colors, bestcount, null=None, linestyles = None, order=None):
+
+
+    datapoints = range(len(train))
+    if null is not None:
+        plt.plot(datapoints, train, color=colors[0], linestyle=linestyles[0], zorder=order[0], label='Rej Train')
+        plt.plot(datapoints, test, color=colors[1], linestyle=linestyles[1], zorder=order[1], label='Rej Test')
+        plt.plot(datapoints, null, color=colors[2], linestyle=linestyles[2], zorder=order[2], label='Rej Nullset')
+    else:
+        plt.semilogy(datapoints, train, color=colors[0], linestyle=linestyles[0], zorder=order[0], label='Rej Train')
+        plt.semilogy(datapoints, test, color=colors[1], linestyle=linestyles[1], zorder=order[1], label='Rej Test')
+
+    count = 0
+    for best in bestcount:
+        if count == 0:
+            plt.semilogy(datapoints[best-1], train[best-1], color='m', marker='o', zorder=order[0], label='Chosen Train')
+            plt.semilogy(datapoints[best-1], test[best-1], color='c', marker='o', zorder=order[1], label='Chosen Test')
+            count += 1
+        else:
+            plt.semilogy(datapoints[best-1], train[best-1], color='m', marker='o', zorder=order[0])
+            plt.semilogy(datapoints[best-1], test[best-1], color='c', marker='o', zorder=order[0])
+
+
+    plt.title(title)
+    plt.xlabel(x)
+    plt.ylabel(y)
+    plt.legend()
+    plt.show()
+
+
+
+
 if __name__ == '__main__':
+    num = 72
     dim = 0
     x = 'Epochs'
     y = 'Loss'
-    title = f'rnn BOWsum 30dim-rico 3dim-out w100 rnntanh240-tanh111 5st'
+    title = 'Dim {dim}, data point {ii}'
     dims = ['0-dim', '1-dim', '2-dim']
     colors = ['r', 'g', 'b']
     linestyles = ['solid', 'dashed', 'dotted']
     layer_order = [10, 5, 0]
-    # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Metastimuli-Learn\Atom-FFNN\graphing_data.pkl', 'rb') as f1:
-    #     prob_graph_dict = pickle.load(f1)
-    #
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl', 'rb') as f2:
-        graph_dict = pickle.load(f2)
+    with open('../Learn_Master/checkpoints/cresults_s05ep_pen01.pkl', 'rb') as f1:
+        graph_dict = pickle.load(f1)
+
+
+
+
+
+
+
+
+# plot_loss
+    train = []; test = []; null = []
+    ftr = []; fte = []; fnu = []
+    for ii in range(1, num+1):
+        sett = graph_dict['improved_meta_set{}'.format(ii)]
+        tr = sett[0]; train.append(tr)
+        te = sett[1]; test.append(te)
+        # nu = sett[2]; null.append(nu); nu = np.average(nu, axis=2)
+        ftr.append(tr[dim][-1])
+        fte.append(te[dim][-1])
+        # fnu.append(nu[dim][-1])
+
+    bestcount = graph_dict['improved_meta_set_bestcount']
+    # plot_metaloss(train, test, title, colors, x, y, null=null, linestyles=linestyles, order=layer_order, merge=True, dim=dim)
+    ftitle = 'Final Loss For Dimension {}'.format(dim)
+    x = 'Runs'
+    plot_final_loss(ftr, fte, ftitle, x, y, colors, bestcount, null=None, linestyles=linestyles, order=layer_order)
+
+
+
+# pre-meta-optimization script
+
 
     # plot_loss(regress_graph_dict, 'Epochs', 'Loss', 'Plot1')
 
@@ -285,54 +398,44 @@ if __name__ == '__main__':
     #     trloss.append(trdict['loss']); teloss.append(tedict['loss']); nuloss.append(nudict['loss'])
     #
     # multi_part(trloss, teloss, nuloss)
-
-
-    dicts_wanted = [
-        f'rnn_500ep_train_rico_BOWsum_w_100_3dims_rnntanh240-tanh111_5st',
-        f'rnn_500ep_test_rico_BOWsum_w_100_3dims_rnntanh240-tanh111_5st',
-        # 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
-                    ]
-    shift = [
-        f'rnn_500ep_test_rico_BOWsum_w_100_3dims_rnntanh240-tanh111_5st',
-        # 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
-    ]
-    plot_one_loss(graph_dict, x, y, title, colors, dicts_wanted=dicts_wanted, linestyles=linestyles, order=layer_order, shift=shift)
-
-
-
-    # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\prediction.pkl', 'rb') as f3:
-    #     pred = pickle.load(f3)
     #
-
-
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\train_labels.pkl', 'rb') as f4:
-        act = pickle.load(f4)
-
-
-
-
-    # pred00_dict = graph_dict[f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh_00']
-    # pred01_dict = graph_dict[f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh_01']
-    # pred02_dict = graph_dict[f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh_02']
+    # plot_one_loss(graph_dict, x, y, title, colors, dicts_wanted=dicts_wanted, linestyles=linestyles, order=layer_order, shift=shift)
+    #
+    #
+    #
+    # # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\prediction.pkl', 'rb') as f3:
+    # #     pred = pickle.load(f3)
     # #
-    # pred00 = pred00_dict['prediction']; pred00 = np.reshape(pred00, (pred00.shape[1], 1))
-    # pred01 = pred01_dict['prediction']; pred01 = np.reshape(pred01, (pred01.shape[1], 1))
-    # pred02 = pred02_dict['prediction']; pred02 = np.reshape(pred02, (pred02.shape[1], 1))
-    # #
-    # pred = np.concatenate((pred00, pred01, pred02), axis=1)
-
-    pred_dict = graph_dict[f'rnn_500ep_pred_rico_BOWsum_w_100_3dims_rnntanh240-tanh111_5st']
-    pred = pred_dict['prediction']
-
-    title = f'Prediction vs. Actual\n rnn_500ep_pred_rico_BOWsum_w_100_3dims_rnntanh240-tanh111_5st'
-
-    num = 50
-    ordered_components(pred, act, num, colors)
-
-    nbars = 100
-    ylab = f'Dimension 0{dim} Component'
-
-    # comparative_bar_plot(pred, act, nbars, ylab, title, dim=dim, plotall=False)
-
-    color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
-    scatterplot3d(pred, act, type='vector', colors=color_list, num_points=5, styles = ['-', 'dashed'], seed=3)
+    #
+    #
+    # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\train_labels.pkl', 'rb') as f4:
+    #     act = pickle.load(f4)
+    #
+    #
+    #
+    #
+    # # pred00_dict = graph_dict[f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh_00']
+    # # pred01_dict = graph_dict[f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh_01']
+    # # pred02_dict = graph_dict[f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh_02']
+    # # #
+    # # pred00 = pred00_dict['prediction']; pred00 = np.reshape(pred00, (pred00.shape[1], 1))
+    # # pred01 = pred01_dict['prediction']; pred01 = np.reshape(pred01, (pred01.shape[1], 1))
+    # # pred02 = pred02_dict['prediction']; pred02 = np.reshape(pred02, (pred02.shape[1], 1))
+    # # #
+    # # pred = np.concatenate((pred00, pred01, pred02), axis=1)
+    #
+    # pred_dict = graph_dict[f'rnn_500ep_pred_rico_BOWsum_w_100_3dims_rnntanh240-tanh111_5st']
+    # pred = pred_dict['prediction']
+    #
+    # title = f'Prediction vs. Actual\n rnn_500ep_pred_rico_BOWsum_w_100_3dims_rnntanh240-tanh111_5st'
+    #
+    # num = 50
+    # ordered_components(pred, act, num, colors)
+    #
+    # nbars = 100
+    # ylab = f'Dimension 0{dim} Component'
+    #
+    # # comparative_bar_plot(pred, act, nbars, ylab, title, dim=dim, plotall=False)
+    #
+    # color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+    # scatterplot3d(pred, act, type='vector', colors=color_list, num_points=5, styles = ['-', 'dashed'], seed=3)
