@@ -170,6 +170,7 @@ def ordered_components(prediction, actual, num, color_list):
 
 def comparative_bar_plot(prediction, actual, nbars, y, title, dim=1, width=0.35, sort='ascending', plotall=False):
     # x1 = []; x2 = []
+    # todo: Rico save routine
 
     all_idx = range(len(prediction))
     if plotall:
@@ -206,6 +207,7 @@ def comparative_bar_plot(prediction, actual, nbars, y, title, dim=1, width=0.35,
 
 
 def scatterplot3d(prediction, actual, type='', num_points=20, colors=[], styles=[], seed=24):
+    # todo: Rico save routine
     random.seed(seed)
     idxs = random.sample(range(len(prediction)), num_points)
 
@@ -318,7 +320,7 @@ def plot_metaloss(train, test, title, colors, x, y, null=None, linestyles = None
     plt.show()
 
 def plot_final_loss(train, test, title, x, y, colors, bestcount, ylim, null=None, linestyles = None, order=None, savefig=None):
-
+    # todo: Rico save routine
 
     datapoints = range(len(train))
     if null is not None:
