@@ -170,7 +170,7 @@ def ordered_components(prediction, actual, num, color_list):
 
 def comparative_bar_plot(prediction, actual, nbars, y, title, dim=1, width=0.35, sort='ascending', plotall=False):
     # x1 = []; x2 = []
-    # todo: Rico save routine
+    # todone Rico save routine
 
     all_idx = range(len(prediction))
     if plotall:
@@ -203,11 +203,14 @@ def comparative_bar_plot(prediction, actual, nbars, y, title, dim=1, width=0.35,
     plt.xticks(fontsize=7)
     plt.yticks(fontsize=7)
     plt.grid()
+
+    if savefig is not None:
+        plt.savefig(savefig, bbox_inches='tight', format='pdf')
     plt.show()
 
 
 def scatterplot3d(prediction, actual, type='', num_points=20, colors=[], styles=[], seed=24):
-    # todo: Rico save routine
+    # todone Rico save routine
     random.seed(seed)
     idxs = random.sample(range(len(prediction)), num_points)
 
@@ -220,7 +223,6 @@ def scatterplot3d(prediction, actual, type='', num_points=20, colors=[], styles=
             ax.scatter3D(prediction[ii, 0], prediction[ii, 1], prediction[ii, 2], color=colors[cc])
             ax.scatter3D(actual[ii, 0], actual[ii, 1], actual[ii, 2], color=colors[cc])
             cc += 1
-        plt.show()
 
     elif type == 'connect':
         fig = plt.figure()
@@ -232,7 +234,6 @@ def scatterplot3d(prediction, actual, type='', num_points=20, colors=[], styles=
             ax.scatter3D(prediction[ii, 0], prediction[ii, 1], prediction[ii, 2], color='c')
             ax.scatter3D(actual[ii, 0], actual[ii, 1], actual[ii, 2], color='k')
             cc += 1
-        plt.show()
 
     elif type == 'vector':
         fig = plt.figure()
@@ -247,7 +248,14 @@ def scatterplot3d(prediction, actual, type='', num_points=20, colors=[], styles=
             ax.scatter3D(prediction[ii, 0], prediction[ii, 1], prediction[ii, 2], color=colors[count])
             ax.scatter3D(actual[ii, 0], actual[ii, 1], actual[ii, 2], color=colors[count], marker='x')
             count += 1
-        plt.show()
+
+    else:
+        raise Exception('unknown argument for type')
+
+
+    if savefig is not None:
+        plt.savefig(savefig, bbox_inches='tight', format='pdf')
+    plt.show()
 
 
 def multi_part(trloss, teloss, nuloss):
@@ -320,7 +328,7 @@ def plot_metaloss(train, test, title, colors, x, y, null=None, linestyles = None
     plt.show()
 
 def plot_final_loss(train, test, title, x, y, colors, bestcount, ylim, null=None, linestyles = None, order=None, savefig=None):
-    # todo: Rico save routine
+    # todone Rico save routine
 
     datapoints = range(len(train))
     if null is not None:
@@ -351,10 +359,11 @@ def plot_final_loss(train, test, title, x, y, colors, bestcount, ylim, null=None
     # plt.autoscale(enable=True, axis='x', tight=True)
     plt.grid()
     plt.legend(fontsize=7)
-    plt.show()
 
     if savefig is not None:
         plt.savefig(savefig, bbox_inches='tight', format='pdf')
+    plt.show()
+
 
 
 
