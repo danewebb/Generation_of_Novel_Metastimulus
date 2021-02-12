@@ -128,21 +128,21 @@ def insertion_sort(sort_arr, follow_arr, sort='ascending'):
         raise ValueError('prediction and actual arrays must be the same size.')
     for ii in range(1, len(sort_arr)):
         key = sort_arr[ii]
-        fkey = follow_arr[ii, :]
+        fkey = follow_arr[ii]
         jj = ii-1
         if sort == 'ascending':
             while jj >= 0 and key < sort_arr[jj]:
                 sort_arr[jj+1] = sort_arr[jj]
-                follow_arr[jj+1, :] = follow_arr[jj, :]
+                follow_arr[jj+1] = follow_arr[jj]
                 jj -= 1
         elif sort == 'descending':
             while jj >= 0 and key > sort_arr[jj]:
                 sort_arr[jj + 1] = sort_arr[jj]
-                follow_arr[jj + 1, :] = follow_arr[jj, :]
+                follow_arr[jj + 1, :] = follow_arr[jj]
                 jj -= 1
 
         sort_arr[jj+1] = key
-        follow_arr[jj+1, :] = fkey
+        follow_arr[jj+1] = fkey
 
     return sort_arr, follow_arr
 
@@ -190,13 +190,18 @@ def comparative_bar_plot(prediction, actual, nbars, y, title, dim=1, width=0.35,
     if sort == 'ascending' or sort == 'descending':
         x2, x1 = insertion_sort(x2, x1, sort)
 
+    plt.figure(figsize=(8,3.5))
 
     plt.bar(ind, x1, width, label='Prediction')
     plt.bar(ind+width, x2, width, label='Actual')
 
     plt.ylabel(y)
     plt.title(title)
-    plt.legend(loc='best')
+    plt.legend(loc='best', fontsize=7)
+    plt.ylabel(y, fontsize=9)
+    plt.xticks(fontsize=7)
+    plt.yticks(fontsize=7)
+    plt.grid()
     plt.show()
 
 
@@ -261,7 +266,7 @@ def multi_part(trloss, teloss, nuloss):
 def plot_metaloss(train, test, title, colors, x, y, null=None, linestyles = None, order=None, dim=0, merge=False):
     ep = range(train[0].shape[1])
     shift = range(1, len(ep)+1)
-
+    plt.figure(figsize=(5,2))
     for ii in range(len(train)):
         tr = train[ii]; te = test[ii]; nu = null[ii]
         nu = np.average(nu, axis=2)
@@ -309,36 +314,45 @@ def plot_metaloss(train, test, title, colors, x, y, null=None, linestyles = None
                 plt.legend()
                 if not merge:
                     plt.show()
+
     plt.show()
 
-def plot_final_loss(train, test, title, x, y, colors, bestcount, null=None, linestyles = None, order=None):
+def plot_final_loss(train, test, title, x, y, colors, bestcount, ylim, null=None, linestyles = None, order=None, savefig=None):
 
 
     datapoints = range(len(train))
     if null is not None:
-        plt.plot(datapoints, train, color=colors[0], linestyle=linestyles[0], zorder=order[0], label='Rej Train')
-        plt.plot(datapoints, test, color=colors[1], linestyle=linestyles[1], zorder=order[1], label='Rej Test')
-        plt.plot(datapoints, null, color=colors[2], linestyle=linestyles[2], zorder=order[2], label='Rej Nullset')
+        plt.semilogy(datapoints, train, color=colors[0], linestyle=linestyles[0], zorder=order[0], label='rej train')
+        plt.semilogy(datapoints, test, color=colors[1], linestyle=linestyles[1], zorder=order[1], label='rej test')
+        plt.semilogy(datapoints, null, color=colors[2], linestyle=linestyles[2], zorder=order[2], label='rej nullset')
     else:
-        plt.semilogy(datapoints, train, color=colors[0], linestyle=linestyles[0], zorder=order[0], label='Rej Train')
-        plt.semilogy(datapoints, test, color=colors[1], linestyle=linestyles[1], zorder=order[1], label='Rej Test')
+        plt.semilogy(datapoints, train, color=colors[0], linestyle=linestyles[0], zorder=order[0], label='rej train')
+        plt.semilogy(datapoints, test, color=colors[1], linestyle=linestyles[1], zorder=order[1], label='rej test')
 
     count = 0
     for best in bestcount:
         if count == 0:
-            plt.semilogy(datapoints[best-1], train[best-1], color='m', marker='o', zorder=order[0], label='Chosen Train')
-            plt.semilogy(datapoints[best-1], test[best-1], color='c', marker='o', zorder=order[1], label='Chosen Test')
+            plt.semilogy(datapoints[best], train[best], color='m', marker='o', zorder=order[0], label='chosen train')
+            plt.semilogy(datapoints[best], test[best], color='c', marker='o', zorder=order[1], label='chosen test')
             count += 1
         else:
-            plt.semilogy(datapoints[best-1], train[best-1], color='m', marker='o', zorder=order[0])
-            plt.semilogy(datapoints[best-1], test[best-1], color='c', marker='o', zorder=order[0])
+            plt.semilogy(datapoints[best], train[best], color='m', marker='o', zorder=order[0])
+            plt.semilogy(datapoints[best], test[best], color='c', marker='o', zorder=order[0])
 
 
     plt.title(title)
-    plt.xlabel(x)
-    plt.ylabel(y)
-    plt.legend()
+    plt.xlabel(x, fontsize=9)
+    plt.ylabel(y, fontsize=9)
+    plt.ylim(ylim)
+    # plt.xticks(fontsize=7)
+    # plt.yticks(fontsize=7)
+    # plt.autoscale(enable=True, axis='x', tight=True)
+    plt.grid()
+    plt.legend(fontsize=7)
     plt.show()
+
+    if savefig is not None:
+        plt.savefig(savefig, bbox_inches='tight', format='pdf')
 
 
 
@@ -351,6 +365,7 @@ if __name__ == '__main__':
     title = 'Dim {dim}, data point {ii}'
     dims = ['0-dim', '1-dim', '2-dim']
     colors = ['r', 'g', 'b']
+    color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
     linestyles = ['solid', 'dashed', 'dotted']
     layer_order = [10, 5, 0]
     with open('../Learn_Master/checkpoints/cresults_s05ep_pen01.pkl', 'rb') as f1:
@@ -358,28 +373,49 @@ if __name__ == '__main__':
 
 
 
-
-
-
-
-
 # plot_loss
-    train = []; test = []; null = []
-    ftr = []; fte = []; fnu = []
-    for ii in range(1, num+1):
-        sett = graph_dict['improved_meta_set{}'.format(ii)]
-        tr = sett[0]; train.append(tr)
-        te = sett[1]; test.append(te)
-        # nu = sett[2]; null.append(nu); nu = np.average(nu, axis=2)
-        ftr.append(tr[dim][-1])
-        fte.append(te[dim][-1])
-        # fnu.append(nu[dim][-1])
+#     train = []; test = []; null = []
+#     ftr = []; fte = []; fnu = []
+#     for ii in range(1, num+1):
+#         sett = graph_dict['improved_meta_set{}'.format(ii)]
+#         tr = sett[0]; train.append(tr)
+#         te = sett[1]; test.append(te)
+#         # nu = sett[2]; null.append(nu); nu = np.average(nu, axis=2)
+#         ftr.append(tr[dim][-1])
+#         fte.append(te[dim][-1])
+#         # fnu.append(nu[dim][-1])
+#
+#     bestcount = graph_dict['improved_meta_set_bestcount']
+#     # plot_metaloss(train, test, title, colors, x, y, null=null, linestyles=linestyles, order=layer_order, merge=True, dim=dim)
+#     ftitle = 'Final Loss For Dimension {}'.format(dim)
+#     x = 'Runs'
+#     ylim = (5e-3, 5e-2)
+#     plot_final_loss(ftr, fte, ftitle, x, y, colors, bestcount, ylim, null=None, linestyles=linestyles, order=layer_order)
 
-    bestcount = graph_dict['improved_meta_set_bestcount']
-    # plot_metaloss(train, test, title, colors, x, y, null=null, linestyles=linestyles, order=layer_order, merge=True, dim=dim)
-    ftitle = 'Final Loss For Dimension {}'.format(dim)
-    x = 'Runs'
-    plot_final_loss(ftr, fte, ftitle, x, y, colors, bestcount, null=None, linestyles=linestyles, order=layer_order)
+
+
+# pred v actual
+    with open('../Learn_Master/predictions/prediction_s05ep_pen01.pkl', 'rb') as f:
+        pred_act = pickle.load(f)
+
+    p = pred_act[0]
+    pred = p[0]
+    a = p[1]
+
+    act = a[:, 0]
+    act = np.reshape(act, (act.shape[0], 1))
+
+
+    nbars = 100
+    dim = 0
+    y = 'dimension {} component'.format(dim)
+    title = ''
+    comparative_bar_plot(pred, act, nbars, y, title, dim=dim, sort='')
+
+
+    # scatterplot3d(pred, act, type='vector', num_points=5, colors=color_list, styles=[linestyles[0], linestyles[1]])
+# comparative_bar_plot(prediction, actual, nbars, y, title, dim=1, width=0.35, sort='ascending', plotall=False)
+# scatterplot3d(prediction, actual, type='', num_points=20, colors=[], styles=[], seed=24)
 
 
 
@@ -439,3 +475,4 @@ if __name__ == '__main__':
     #
     # color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
     # scatterplot3d(pred, act, type='vector', colors=color_list, num_points=5, styles = ['-', 'dashed'], seed=3)
+

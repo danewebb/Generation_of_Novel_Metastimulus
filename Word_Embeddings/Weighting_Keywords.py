@@ -9,7 +9,7 @@ from nltk.stem import WordNetLemmatizer
 
 class Weighting_Keyword:
 
-    def __init__(self, vocab, weight, tags=None):
+    def __init__(self, vocab, weight, keywords=None, tags=None):
 
         self.tags = tags
         self.paras = None
@@ -24,7 +24,11 @@ class Weighting_Keyword:
 
         self.enc_keywords = dict()
 
+        if keywords is not None:
+            if not isinstance(keywords, list):
+                raise TypeError('Arg keywords must be a list of keywords')
 
+        self.userdef = keywords
 
         self.__init_dicts()
 
@@ -109,11 +113,18 @@ class Weighting_Keyword:
         for idx, enc in enumerate(self.vocab):
             for node, node_dict in self.keywords.items():
                 for word in node_dict['words']:
-                    if enc == word:
-                        node_dict['enc'].append(idx)
+                    try:
+                        if self.__lemmatize_word(enc) == self.__lemmatize_word(word):
+                            node_dict['enc'].append(idx)
+                    except:
+                        pass
                 for word in node_dict['first']:
                     if enc == word:
                         node_dict['first_enc'].append(idx)
+
+        # if self.userdef is not None:
+        #     for idx, enc in enumerate(self.vocab):
+        #         for word in self.userdef:
 
             # for key, val in self.phrase:
             #     if key == enc:
@@ -180,36 +191,36 @@ class Weighting_Keyword:
         self.phrase['angular'] = ['velocity']
 
 
-        V['words'] = ['voltage', 'volt', 'volts']; V['weight'] = self.w; V['first'] = []
-        v['words'] = ['velocity', 'm/s']; v['weight'] = self.w; v['first'] = []
-        OM['words'] = ['omega', 'rad/s']; OM['weight'] = self.w; OM['first'] = []
-        P['words'] = ['pressure', 'atm', 'bar', 'psi']; P['weight'] = self.w; P['first'] = []
-        TE['words'] = ['temperature', 'temperatures', 'temp']; TE['weight'] = self.w; TE['first'] = []
-        S['words'] = ['source', 'sources', 'across-variable', 'through-variable']; S['weight'] = self.w; S['first'] = ['across']
+        V['words'] = ['volt']; V['weight'] = self.w; V['first'] = []
+        v['words'] = ['velocity']; v['weight'] = self.w; v['first'] = []
+        OM['words'] = ['omega']; OM['weight'] = self.w; OM['first'] = []
+        P['words'] = ['pressure']; P['weight'] = self.w; P['first'] = []
+        TE['words'] = ['temperature']; TE['weight'] = self.w; TE['first'] = []
+        S['words'] = ['source']; S['weight'] = self.w; S['first'] = ['across']
 
-        f['words'] = ['force', 'forces']; f['weight'] = self.w; f['first'] = []
-        TO['words'] = ['torque', 'tau', 'nm', 'torques']; TO['weight'] = self.w; TO['first'] = []
-        I['words'] = ['current', 'amp', 'amps']; I['weight'] = self.w; I['first'] = []
-        q['words'] = ['heat', 'joule', 'btu', 'watt', 'watts']; q['weight'] = self.w; q['first'] = []
-        Q['words'] = ['cubic', 'volume']; Q['weight'] = self.w; Q['first'] = []
+        f['words'] = ['force']; f['weight'] = self.w; f['first'] = []
+        TO['words'] = ['torque']; TO['weight'] = self.w; TO['first'] = []
+        I['words'] = ['current']; I['weight'] = self.w; I['first'] = []
+        q['words'] = ['heat']; q['weight'] = self.w; q['first'] = []
+        Q['words'] = ['volume']; Q['weight'] = self.w; Q['first'] = []
 
         A['words'] = ['a-type']; A['weight'] = self.w; A['first'] = []
-        C['words'] = ['capacitor', 'farads', 'capacitance', 'capacitors']; C['weight'] = self.w; C['first'] = []
-        M['words'] = ['mass', 'masses']; M['weight'] = self.w; M['first'] = []
-        J['words'] = ['moment', 'inertia', 'moments']; J['weight'] = self.w; J['first'] = []
-        FC['words'] = ['n/m', 'lb/m']; FC['weight'] = self.w; FC['first'] = ['fluid', 'fluids']
-        TC['words'] = ['c/m', 'f/m']; TC['weight'] = self.w; TC['first'] = ['thermal', 'thermals']
+        C['words'] = ['capacitor']; C['weight'] = self.w; C['first'] = []
+        M['words'] = ['mass']; M['weight'] = self.w; M['first'] = []
+        J['words'] = ['moment']; J['weight'] = self.w; J['first'] = []
+        FC['words'] = []; FC['weight'] = self.w; FC['first'] = ['fluid', 'fluids']
+        TC['words'] = []; TC['weight'] = self.w; TC['first'] = ['thermal', 'thermals']
 
         T['words'] = ['t-type']; T['weight'] = self.w; T['first'] = []
-        k['words'] = ['spring', 'springs']; k['weight'] = self.w; k['first'] = []
-        L['words'] = ['inductor', 'inductance', 'inductors']; L['weight'] = self.w; L['first'] = []
+        k['words'] = ['spring']; k['weight'] = self.w; k['first'] = []
+        L['words'] = ['inductor']; L['weight'] = self.w; L['first'] = []
         FL['words'] = ['inertance']; FL['weight'] = self.w; FL['first'] = ['fluid', 'fluids']
 
         D['words'] = ['d-type']; D['weight'] = self.w; D['first'] = []
         B['words'] = ['damper']; B['weight'] = self.w; B['first'] = []
-        R['words'] = ['resistor', 'resistors', 'resistance', 'ohm', 'impedance']; R['weight'] = self.w; R['first'] = []
+        R['words'] = ['resistor']; R['weight'] = self.w; R['first'] = []
         FR['words'] = ['drag']; FR['weight'] = self.w; FR['first'] = ['fluid', 'fluids']
-        TR['words'] = ['k/w']; TR['weight'] = self.w; TR['first'] = ['thermal', 'thermals']
+        TR['words'] = []; TR['weight'] = self.w; TR['first'] = ['thermal', 'thermals']
 
 
 

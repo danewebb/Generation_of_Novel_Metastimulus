@@ -8,7 +8,7 @@ import keras
 
 import gensim
 import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 class Atom_Embedder:
 

@@ -37,13 +37,13 @@ class Learn_Master():
     """
     def __init__(self, dataset_dict, vocab, ordered_encdata, ordered_labels, input_dims, we_models, output_dims, keyword_weight_factor,
                  optimizers, atom_methods, nn_architectures, hyperoptimizers, ints, projections=None,
-                 savepath_model = None, kt_directory='untitled',
+                 savepath_model = None, kt_directory='untitled', fitness_savepath='fitness_savepath',
                  NN_prebuilt_model=None, NNclasse=None,
                  WE_classes=None, vocab_save_path='', data_save_path='', checkpoint_filepath='untitled_checkpoints',
                  projection=None, adjacency=None, curout_dim=0, raw_paras=None,
                  epochs=1, fitness_epochs=10, rnn_steps=3,
 
-                 maxiter=100, mindiff=1e-6, mu0=4, alpha=1e-1, delta=4,
+                 maxiter=100, mindiff=1e-6, mu0=4, alpha=1, delta=4,
                  ):
 
         """
@@ -130,6 +130,8 @@ class Learn_Master():
         self.maxiter = maxiter
         self.mu0= mu0
         self.mu = mu0
+
+        self.fitness_savepath = fitness_savepath
 
         if raw_paras is not None:
             self.raw_paras = raw_paras
@@ -288,13 +290,13 @@ class Learn_Master():
 
     def penalties(self, loss, wkey, out):
         if wkey > 1:
-            kpen = 0.01 * wkey
+            kpen = 0.0001 * wkey
             kpen = kpen + 1
         else:
             kpen = 1
 
         if out > 2:
-            open = 0.05*out
+            open = 0.001*out
             open = open + 1
         else:
             open = 1
@@ -402,8 +404,8 @@ class Learn_Master():
 
 
         avgloss = sum(total_loss)/len(total_loss)
-        penloss = self.penalties(avgloss, kweight, out_dims)
-
+        # penloss = self.penalties(avgloss, kweight, out_dims)
+        penloss = avgloss
 
         return penloss, all_models, all_tuners
 
@@ -414,17 +416,18 @@ class Learn_Master():
         mesh = np.zeros((2*self.nvar, self.nvar))
         gps = np.zeros((2 * self.nvar, self.nvar))
 
-        for ii in range(mesh.shape[1]):
-            if ii <= self.nvar:
+        for ii in range(mesh.shape[0]):
+            if ii == self.nvar:
+                jj = 0
+            if ii < self.nvar:
                 mesh[ii, jj] = self.mu
                 jj += 1
-                if ii == self.nvar:
-                    jj = 0
+
             else:
                 mesh[ii, jj] = -self.mu
                 jj += 1
 
-        for ii in range(mesh.shape[1]):
+        for ii in range(mesh.shape[0]):
             gps[ii, :] = mesh[ii, :] + x
 
         return gps
@@ -444,6 +447,8 @@ class Learn_Master():
 
 
     def enforce_bounds(self, x):
+        if x.ndim == 1:
+            x = np.reshape(x, (1, len(x)))
         xnew = np.zeros(x.shape)
         for jj in range(x.shape[1]):
             for ii in range(x.shape[0]):
@@ -456,6 +461,20 @@ class Learn_Master():
 
         return xnew
 
+    def save_fitness(self, fitness):
+        try:
+            with open(self.fitness_savepath, 'rb') as f:
+                fit_res = pickle.load(f)
+
+        except:
+            fit_res = []
+
+
+        fit_res.append(fitness)
+        with open(self.fitness_savepath, 'wb') as f:
+            pickle.dump(fit_res, f)
+
+
 
     def PS_integer(self, train_for=0, dict_template='', master_dict=None, n_nulls=50):
         if master_dict is None:
@@ -465,16 +484,15 @@ class Learn_Master():
         for ii in range(self.nvar):
             obj[0, ii] = np.random.randint(self.lb[ii], self.ub[ii])
 
-        dic = dict()
-        dic['f'] = [1, 2, 3, 4]
-        # self.save_checkpoint_results(dict_template, 5, dic)
+
         objold = np.zeros((1, self.nvar), dtype='int32')
         objnew = np.zeros((1, self.nvar), dtype='int32')
         mu = self.mu0
 
         oldfit = np.inf
         newfit = 0
-
+        obj = self.enforce_bounds(obj)
+        obj = self.intcons(obj)
         obj = self.build_objdataset(obj)
 
         curfit, best_models, best_tuners = self.ff_fitness(
@@ -488,8 +506,9 @@ class Learn_Master():
 
         if train_for > 0:
             count += 1
+            self.save_fitness(curfit)
             results = self.train_best_hps(best_tuners, obj, train_for, num_nulls=n_nulls)
-            self.save_checkpoint_results(dict_template, count, results, obj, best_tuners, best=False)
+            self.save_checkpoint_results(dict_template, count, results, obj, best_tuners, best=True) # save rando gen
         diff = np.inf
         iter = 0
 
@@ -497,7 +516,7 @@ class Learn_Master():
 
             import time
             #  and diff > self.mindiff:
-            if iter % 100:
+            if iter % 10:
                 t = time.localtime()
                 now = time.strftime("%H:%M:%S", t)
                 print('-----------------------------------------------------------------------------------------------')
@@ -513,9 +532,10 @@ class Learn_Master():
             mesh = self.intcons(mesh)
 
             # check if any of the exploratory points have lower fitness
-            for ii in range(1, self.nvar):
+            for ii in range(0, 2*self.nvar):
                 mesh[ii, :] = self.build_objdataset(mesh[ii, :])
                 print(mesh[ii, :])
+                # meshfit = self.gen_random_loss()
                 meshfit, meshmods, tuners = self.ff_fitness(
                     self.input_dims[mesh[ii, 1]],
                     self.output_dims[mesh[ii, 2]],
@@ -524,8 +544,10 @@ class Learn_Master():
                     nn_architecture=self.nn_architectures[mesh[ii, 6]],
                     hyperoptimizer=self.hyperoptimizers[mesh[ii, 7]]
                 )
+
                 if train_for > 0:
                     count += 1
+                    self.save_fitness(meshfit)
                     results = self.train_best_hps(tuners, mesh[ii, :], train_for, num_nulls=n_nulls)
                     self.save_checkpoint_results(dict_template, count, results, mesh[ii, :], tuners, best=False)
 
@@ -537,15 +559,20 @@ class Learn_Master():
                     best_tuner = tuners
                     changeflag = 1
                     start = time.time()
+
                     if train_for > 0:
-
-                        results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=n_nulls)
-                        master_dict[dict_template+'{count}'.format(count=count)] = results
                         count += 1
-
-                        self.save_checkpoint_results(dict_template, count, results, objnew, best_tuner, best=True)
+                        self.save_fitness(curfit)
+                        chosen_results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=n_nulls)
+                        master_dict[dict_template+'{count}'.format(count=count)] = chosen_results
+                        self.save_checkpoint_results(dict_template, count, chosen_results, objnew, best_tuner, best=False)
+                        bestcount = count
 
             if changeflag == 1:
+                self.save_checkpoint_results(dict_template, bestcount, chosen_results, objnew, best_tuner, best=True)
+                # #####
+                # count += 1
+                # self.save_checkpoint_results(dict_template, count, curfit, objnew, best=True)
                 changeflag = 0
                 mu = self.mu0
                 while newfit < curfit:
@@ -557,6 +584,7 @@ class Learn_Master():
                     objnew = self.intcons(objnew)
                     objnew = self.build_objdataset(objnew)
 
+                    # newfit = self.gen_random_loss()
                     newfit, newmodels, new_tuners = self.ff_fitness(
                         self.input_dims[objnew[0, 1]],
                         self.output_dims[objnew[0, 2]],
@@ -567,29 +595,42 @@ class Learn_Master():
                     )
 
                     if train_for > 0:
+                        count += 1
+                        self.save_fitness(newfit)
                         results = self.train_best_hps(new_tuners, objnew, train_for, num_nulls=n_nulls)
                         master_dict[dict_template+'{count}'.format(count=count)] = results
-                        count += 1
 
                         self.save_checkpoint_results(dict_template, count, results, objnew, new_tuners, best=False)
 
+                    #####
+                    # don't save here
+                    # count += 1
+                    # self.save_checkpoint_results(dict_template, count, newfit, obj, best=False)
 
                     mesh = self.make_mesh(objnew)
                     mesh = self.enforce_bounds(mesh)
                     mesh = self.intcons(mesh)
 
-                    for ii in range(1, self.nvar):
+                    for ii in range(0, 2*self.nvar):
                         self.build_objdataset(mesh[ii, :])
 
                         meshfit, meshmod, tuner = self.ff_fitness(
 
-                            self.input_dims[mesh[ii, 1]],
-                            self.output_dims[mesh[ii, 2]],
-                            self.keyword_weigth_factor[mesh[ii, 3]],
-                            optimizer=self.optimizers[mesh[ii, 5]],
-                            nn_architecture=self.nn_architectures[mesh[ii, 6]],
-                            hyperoptimizer=self.hyperoptimizers[mesh[ii, 7]]
-                        )
+                                                    self.input_dims[mesh[ii, 1]],
+                                                    self.output_dims[mesh[ii, 2]],
+                                                    self.keyword_weigth_factor[mesh[ii, 3]],
+                                                    optimizer=self.optimizers[mesh[ii, 5]],
+                                                    nn_architecture=self.nn_architectures[mesh[ii, 6]],
+                                                    hyperoptimizer=self.hyperoptimizers[mesh[ii, 7]]
+                                                )
+                        if train_for > 0:
+                            count += 1
+                            self.save_fitness(meshfit)
+                            results = self.train_best_hps(tuner, mesh[ii, :], train_for, num_nulls=n_nulls)
+                            master_dict[dict_template + '{count}'.format(count=count)] = results
+
+                            self.save_checkpoint_results(dict_template, count, results, mesh[ii, :], tuner, best=False)
+
                         if meshfit < curfit:
                             oldfit = curfit
                             curfit = meshfit
@@ -598,19 +639,24 @@ class Learn_Master():
                             best_tuner = tuner
                             changeflag = 1
 
-                        if train_for > 0:
-                            count += 1
-                            results = self.train_best_hps(tuner, mesh[ii, :], train_for, num_nulls=n_nulls)
-                            self.save_checkpoint_results(dict_template, count, results, mesh[ii, :], tuner, best=False)
+                            if train_for > 0:
+                                count += 1
+                                self.save_fitness(curfit)
+                                chosen_results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=n_nulls)
+                                self.save_checkpoint_results(dict_template, count, chosen_results, objnew, best_tuner, best=False)
+                                bestcount = count
 
                     if changeflag == 1:
+                        self.save_checkpoint_results(dict_template, bestcount, chosen_results, objnew, best_tuner, best=True)
                         changeflag = 0
                         if train_for > 0:
                             end = time.time()
-                            results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=n_nulls)
-                            master_dict[dict_template + '{count}'.format(count=count)] = results
-                            count += 1
-                            self.save_checkpoint_results(dict_template, count, results, objnew, best_tuner, best=True)
+
+                            # results = self.train_best_hps(best_tuner, objnew, train_for, num_nulls=n_nulls)
+                            # master_dict[dict_template + '{count}'.format(count=count)] = results
+                            # count += 1
+                            # print(count)
+                            # self.save_checkpoint_results(dict_template, count, results, objnew, best_tuner, best=False)
 
                             print('New center took {time} hours'.format(time = (end-start)/3600))
 
@@ -626,6 +672,7 @@ class Learn_Master():
 
 
         return obj, best_tuner, best_model, master_dict
+        # return obj
 
 
     def save_checkpoint_results(self, dict_template, count, results, obj, tuner, best=True):
@@ -663,13 +710,15 @@ class Learn_Master():
 
         return null_arr
 
-
+    def gen_random_loss(self):
+        return np.random.rand()
 
     def train_best_hps(self, tuners, objectives, train_epochs, num_nulls=50, predict=False):
 
+        obj = self.enforce_bounds(objectives)
+        obj = self.intcons(obj)
+        obj = self.build_objdataset(obj)
 
-
-        obj = self.build_objdataset(objectives)
 
         dimsout = self.output_dims[obj[0, 2]]
         if num_nulls != 0 and self.nn_architectures[obj[0, 6]] == 'ff':
@@ -691,7 +740,7 @@ class Learn_Master():
         restr = np.empty((dimsout, train_epochs))
         reste = np.empty((dimsout, train_epochs))
 
-        if obj[0, 6] == 0:
+        if self.nn_architectures[obj[0, 6]] == 'ff':
 
             for dim in range(dimsout):
                 best_hps = tuners[dim].get_best_hyperparameters(num_trials=1)[0]
@@ -824,12 +873,45 @@ class Learn_Master():
                     keras.backend.clear_session()
 
         if predict:
-            if obj[0, 6] == 0:
-                prediction = FF.predict()
-                predlabels = self.train_labels
+            prediction = []; predlabels = []
+
+            if self.nn_architectures[obj[0, 6]] == 'ff':
+                for dim in range(dimsout):
+                    FF = Atom_FFNN(
+                        data=self.train,
+                        train_labels=self.train_labels,
+                        test=self.test,
+                        test_labels=self.test_labels,
+                        nullset=self.test,
+                        nullset_labels=null_labels,
+                        current_dim=dim,
+                        model_path=self.savepath_model[dim],
+                        save_model_path=self.savepath_model[dim],
+                        optimize=False,
+                        regression=True,
+                        epochs=1,
+                    )
+                    prediction.append(FF.predict())
+                predlabels = (self.train_labels)
 
             else:
-                prediction = RNN.predict()
+                for dim in range(dimsout):
+                    RNN = Atom_RNN(
+                        data=self.ordtrain,
+                        train_labels=self.ordtrain_labels,
+                        test=self.ordtest,
+                        test_labels=self.ordtest_labels,
+                        nullset=self.ordtest,
+                        nullset_labels=null_labels,
+                        steps=self.rnn_steps,
+                        curdim=self.curout_dim,
+                        model_path=self.savepath_model[dim],
+                        save_model_path=self.savepath_model[dim],
+                        optimize=False,
+                        regression=True,
+                        epochs=1,
+                    )
+                    prediction = RNN.predict()
                 predlabels = self.ordtrain_labels
         else:
             prediction = None
@@ -889,7 +971,8 @@ if __name__ == '__main__':
             vocab.append(pickle.load(f))
 
     input_dims = [2, 3, 5, 10, 20, 30, 40, 50, 2]
-    output_dims = [2, 3, 4, 5] # greatly increases computation time
+    # input_dims = [2]
+    output_dims = [2, 3, 4] # greatly increases computation time
 
     model_paths = []
     for ii in range(output_dims[-1]):
@@ -906,15 +989,15 @@ if __name__ == '__main__':
         fib.remove(1) # removes first 1
         return fib
 
-    weighting_factor = fibonacci(20)
-
+    weighting_factor = fibonacci(10)
+    # weighting_factor = [1]
     optimizers = ['sgd', 'adam', 'adagrad', 'rmsprop', 'adadelta', 'adamax']
 
     label_paths = [
         os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_2Dims.pkl'),
         os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_3dims.pkl'),
         os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_4dims.pkl'),
-        os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_5dims.pkl'),
+        # os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_5dims.pkl'),
         # os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_6dims.pkl'),
         # os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_7dims.pkl'),
         # os.path.join(up_dir,'Ordered_Data/Full_Ordered_Labels_8dims.pkl'),
@@ -933,7 +1016,7 @@ if __name__ == '__main__':
         os.path.join(up_dir,'Misc_Data/Projection_2dims.pkl'),
         os.path.join(up_dir,'Misc_Data/Projection_3dims.pkl'),
         os.path.join(up_dir,'Misc_Data/Projection_4dims.pkl'),
-        os.path.join(up_dir,'Misc_Data/Projection_5dims.pkl'),
+        # os.path.join(up_dir,'Misc_Data/Projection_5dims.pkl'),
         # os.path.join(up_dir,'Misc_Data/Projection_6dims.pkl'),
         # os.path.join(up_dir,'Misc_Data/Projection_7dims.pkl'),
         # os.path.join(up_dir,'Misc_Data/Projection_8dims.pkl'),
@@ -967,7 +1050,7 @@ if __name__ == '__main__':
 
     atom_embed_method = ['sum_atoms', 'avg_atoms', 'ndelta', 'pvdm']
 
-
+    # atom_embed_method = ['sum_atoms']
     # for output in output_dims:
     #     for curdim in range(output):
     #         Learn_Master(
@@ -979,9 +1062,13 @@ if __name__ == '__main__':
     ints = [0, 1, 2, 3, 4, 5, 6, 7]
 
     nn_arch = ['ff', 'rnn']
+    # nn_arch = ['ff']
     curdim = 0
 
-    checkpoint_filepath = 'Learn_Master/checkpoints/cresults_s05ep_pen01.pkl'
+    run_name = 's10ep_optim01'
+    fit_savepath = os.path.join(up_dir, 'Learn_Master/checkpoints/fitness_{run_name}.pkl'.format(run_name=run_name))
+    # run_name = 'test'
+    checkpoint_filepath = os.path.join(up_dir,'Learn_Master/checkpoints/cresults_{run_name}.pkl'.format(run_name=run_name))
     # checkpoint_filepath = os.path.join(up_dir,'Learn_Master/checkpoints/test.pkl')
     LM = Learn_Master(
         doc_dict,
@@ -1000,66 +1087,83 @@ if __name__ == '__main__':
         projections,
         # curout_dim=curdim,
         epochs = 5,
-        mu0=4,
-        alpha=1,
+        mu0=3,
+        alpha=2,
         delta=1,
-        maxiter=5,
+        maxiter=3,
         savepath_model=model_paths,
         rnn_steps=3,
         kt_directory='test1',
         checkpoint_filepath=checkpoint_filepath,
         raw_paras=paras,
+        fitness_savepath=fit_savepath,
     )
 # PS script
 #     try:
-#         with open(os.path.join(up_dir,'Learn_Master/optimized_models/results_s05ep_pen01.pkl'), 'rb') as f:
+#         with open(os.path.join(up_dir,'Learn_Master/optimized_models/results_{run_name}.pkl'.format(run_name=run_name)), 'rb') as f:
 #             optimization_results = pickle.load(f)
 #     except:
 #         optimization_results = dict()
 #     results = dict()
 #
 #     dict_template = 'improved_meta_set'
-#     objectives, tuner, model, optimization_results['optimizing'] = LM.PS_integer(train_for=2, dict_template=dict_template, master_dict=results, n_nulls=0)
+#     objectives, tuner, model, optimization_results['optimizing'] = LM.PS_integer(train_for=10, dict_template=dict_template, master_dict=results, n_nulls=0)
 #
-#     with open('Learn_Master/optimized_models/results_s05ep_pen01.pkl', 'wb') as f:
+#     with open(os.path.join(up_dir,'Learn_Master/optimized_models/results_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
 #         pickle.dump(optimization_results, f)
 #
 #
-#     with open('Learn_Master/best/objectives_s05ep_pen01.pkl', 'wb') as f:
+#     with open(os.path.join(up_dir,'Learn_Master/best/objectives_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
 #         pickle.dump(objectives, f)
-#     with open('Learn_Master/best/tuner_s05ep_pen01.pkl', 'wb') as f:
+#     with open(os.path.join(up_dir,'Learn_Master/best/tuner_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
 #         pickle.dump(tuner, f)
     # with open(os.path.join(up_dir,'Learn_Master/best/model.pkl'), 'wb') as f:
     #     pickle.dump(model, f)
-    # keras.models.save_model(model, 'Learn_Master/best/model_s05ep_pen01') # don't want to save list of models
+    # for ii, mod in enumerate(model):
+    #     keras.models.save_model(model, 'Learn_Master/best/model_{run_name}_{ii}'.format(run_name=run_name, ii=ii)) # don't want to save list of models
+
+
+
+
 
 # prediction script
-    num = 72
-    with open('../Learn_Master/checkpoints/cresults_s05ep_pen01.pkl', 'rb') as f:
+    from Lib.Misc_Data.Pre_Process import breakup
+    pred_name = 's10ep_optim01'
+    num = 84
+
+    dim = 0
+    with open('Learn_Master/checkpoints/cresults_{}.pkl'.format(pred_name), 'rb') as f:
         graph_dict = pickle.load(f)
+
+
+    bestcount = graph_dict['improved_metaset_actual_bestcount']
+
+    train, test, ftr, fte = breakup(graph_dict, num, dim)
+    # bestcount, _ = find_mins(ftr)
     tuners = []
     objectives = []
     train_res = []
     pred_res = []
     act = []
-    for ii in range(1, num+1):
-        key = 'improved_meta_set_tuner_{}'.format(ii)
+    for ii in bestcount:
+        key = 'improved_meta_set_tuner_{}'.format(bestcount[ii])
         tuners.append(graph_dict[key])
-        key = 'improved_meta_set_obj_{}'.format(ii)
+        key = 'improved_meta_set_obj_{}'.format(bestcount[ii])
         objectives.append(graph_dict[key])
 
-    epochs = 50
-    for jj in range(0, num-1):
-        _, pres = LM.train_best_hps(tuners[jj], objectives[jj], epochs, num_nulls=0, predict=True)
 
+
+    epochs = 500
+
+    for jj, idx in enumerate(bestcount):
+        train_res, pres = LM.train_best_hps(tuners[idx], objectives[idx], epochs, num_nulls=25, predict=True)
+        print('Complete round {} of {}'.format(jj, len(bestcount)))
         pred_res.append(pres)
-        obj = objectives[jj]
-        if obj[0, 6] == 0:
-            act.append(LM.train)
-        else:
-            act.append(LM.ordtrain)
-    with open('../Learn_Master/prediction.pkl', 'wb') as f:
+
+    with open('Learn_Master/predictions/prediction_{}.pkl'.format(pred_name), 'wb') as f:
         pickle.dump(pred_res, f)
-    with open('../Learn_Master/actual.pkl', 'wb') as f:
-        pickle.dump(act, f)
+
+    with open('Learn_Master/optimized_models/results_{}'.format(pred_name), 'wb') as f:
+        pickle.dump(train_res, f)
+
 
