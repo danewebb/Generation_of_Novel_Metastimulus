@@ -141,6 +141,8 @@ class Learn_Master():
         self.mu = mu0
         self.train_for = 0
         self.n_nulls = 0
+        self.npop = 0
+
 
         self.saver = dict() # Saves status and variables for pattern search
         self.fitness_savepath = fitness_savepath
@@ -1103,6 +1105,69 @@ class Learn_Master():
             return [restr, reste]
 
 
+
+    def parent_select(self, obj, fit, numparents, Y=2):
+        # tournament selection parents
+        # Y = 2 is most common and is the current default.
+        # changing Y changes selection pressure
+        parents = np.zeros(numparents, obj.shape[1])
+
+        for ii in range(numparents):
+            r = np.random.randint(0, self.npop, (Y,)) # random indices to pick competing parents
+            randfits = []
+            for jj in range(Y):
+                randfits.append(fit[r[jj]]) # group parents we want to compare
+            m = min(randfits)
+            idx = fit.index(m)
+            parents[ii, :] = obj[idx, :]
+
+        return parents
+
+    def crossover(self, parents):
+        # one point crossover
+        children = np.zeros(parents)
+        crosspoint = np.random.randint(0, self.nvar)
+        if parents % 2 != 0:
+            raise ValueError("numparents must be an even integer")
+        shuffled = np.random.shuffle(parents) # shuffles parents along axis 0
+        for ii in range(0, len(parents), 2):
+            children[ii, :crosspoint] = shuffled[ii, :crosspoint]
+            children[ii, crosspoint:] = shuffled[ii+1, crosspoint:]
+            children[ii+1, :crosspoint] = shuffled[ii, :crosspoint]
+            children[ii+1, crosspoint:] = shuffled[ii+1, crosspoint:]
+
+
+        return children
+
+    # def mutate(self):
+        
+
+    def genetic_alg(self, numparents, npop, mutation_rate=0.2):
+        if numparents > npop:
+            raise ValueError("numparents must be less than npop")
+        self.npop = npop
+        obj = np.zeros((self.npop, self.nvar), dtype='int32')
+        fit = np.zeros(self.npop)
+        for jj in range(self.npop):
+            for ii in range(self.nvar):
+                # generates npop random solutions
+                obj[jj, ii] = np.random.randint(self.lb[ii], self.ub[ii])
+
+        iter = 0
+        while iter < 1000:
+            iter = 1111
+            for jj in range(self.npop):
+                obj[jj, :] = self.intcons(obj[jj, :])
+                obj[jj, :] = self.enforce_bounds(obj[jj, :])
+                obj[jj, :] = self.build_objdataset(obj[jj, :])
+                fit[jj], _, tuners = self.ff_fitness(
+                    self.input_dims[obj[jj, 1]],
+                    self.output_dims[obj[jj, 2]],
+                    self.keyword_weigth_factor[obj[jj, 3]],
+                    optimizer=self.optimizers[obj[jj, 5]],
+                    nn_architecture=self.nn_architectures[obj[jj, 6]],
+                    hyperoptimizer=self.hyperoptimizers[obj[jj, 7]]
+                )
 
 
 
