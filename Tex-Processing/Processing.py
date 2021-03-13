@@ -2,7 +2,8 @@ import numpy as np
 import pickle
 import os
 import re
-import nltk
+from nltk import WordNetLemmatizer
+from nltk import word_tokenize
 from nltk.corpus import stopwords
 import json
 import tensorflow as tf
@@ -16,20 +17,25 @@ class Tex_Processing():
     This class handles splitting data between
     """
 
-    def __init__(self, data=None, data_dir='', vocab=None, vocab_dir=''):
+    def __init__(self, data=None, data_dir='', vocab=None, vocab_dir='', doc_dict=None):
 
 
-        if data != None:
+        if data is not None:
             self.data = data
         elif data_dir != '':
             with open(data_dir, 'rb') as f1:
                 self.data = pickle.load(f1)
-        else:
-            raise ValueError('No valid data in input')
 
+        self.vocab_tab = dict()
         self.encoded_data = []
-
         self.data_lens = []
+
+        self.pattern = r'[a-z]+'
+
+        self.stop_words = set(stopwords.words('english'))
+
+        self.lemmatizer = WordNetLemmatizer()
+
         # with open(train_projection, 'rb') as train_labels:
         #     self.train_plabels = pickle.load(train_labels)
 
@@ -38,16 +44,105 @@ class Tex_Processing():
         if vocab_dir != '':
             with open(vocab_dir, 'rb') as vocab_data:
                 self.vocab_data = pickle.load(vocab_data)
-        elif vocab != None:
+        elif vocab is not None:
             self.vocab_data = vocab
         else:
             ValueError('Vocab is not defined')
 
 
+        if doc_dict is not None:
+            self.paras, self.tags = self.dict_breakout(doc_dict)
+
+
+    def dict_breakout(self, doc_dict):
+        paras = []; tags = []
+        for ii in range(1, 579+1):
+            dic = doc_dict[ii]
+            para = dic['para_dict']
+            tag = dic['tag_dict']
+            paras.append(para['paragraph'])
+            tags.append(tag['tags'])
+        return paras, tags
+
+
+    def tokenize(self, string):
+        # returns a tokenized an lower cased string
+        string = string.lower()
+        tok = word_tokenize(string, 'English')
+        return tok
+
+    def remove_numsym(self, word):
+        w = re.match(self.pattern, word)
+        if w:
+            return w.string
+
+
+    def clean_word(self, word):
+        w = self.remove_numsym(word)
+        if w is not None:
+            lem = self.lemmatize(w)
+            return lem
+        else:
+            return None
+
+    def build_vocab(self):
+        for para in self.paras:
+            for sen in para:
+                tokens = self.tokenize(sen)
+                for word in tokens:
+                    lem = self.clean_word(word)
+                    if lem is not None:
+                        if lem in self.vocab_tab.keys():
+                            self.vocab_tab[lem] += 1
+                        else:
+                            self.vocab_tab[lem] = 1
+
+        return self.vocab_tab
+
+    def sort_tuple(self, tup, sortbyidx):
+        tup.sort(key=lambda x:x[sortbyidx])
+        tup.reverse()
+        return tup
+
+    def reduce_tuple(self, tup, idxwant):
+        want = []
+        for ele in tup:
+            want.append(ele[idxwant])
+        return want
+
+    def rank_vocab(self, vocab_dict, cutoff):
+        vocab_tup = []
+        culled_vocab = []
+        placeholder = list('0')
+        for key, val in vocab_dict.items():
+            vocab_tup.append((key, val))
+
+        ranked_vocab = self.sort_tuple(vocab_tup, 1)
+        for ele in ranked_vocab:
+            if ele[1] >= cutoff:
+                culled_vocab.append(ele)
+        rank_vocab = self.reduce_tuple(culled_vocab, 0)
+        full_vocab = placeholder +  rank_vocab
+        return full_vocab
 
 
 
-
+    def encode_paras(self, ranked_vocab):
+        atom = []
+        atoms = []
+        for para in self.paras:
+            for sen in para:
+                tokens = self.tokenize(sen)
+                for word in tokens:
+                    lem = self.clean_word(word)
+                    if lem is not None:
+                        nostop = self.remove_stop(lem)
+                        if nostop == '':
+                            atom.append(0)
+                        else:
+                            atom.append(ranked_vocab.index(nostop))
+            atoms.append(atom)
+            atom = []
 
     # def split_data(self):
     #     """
@@ -194,15 +289,11 @@ class Tex_Processing():
 
 
     def lemmatize(self, word):
-        from nltk.stem import WordNetLemmatizer
-        lemmatizer = WordNetLemmatizer()
-
-        return lemmatizer.lemmatize(word)
+        return self.lemmatizer.lemmatize(word)
 
 
     def remove_stop(self, word):
-        stop_words = set(stopwords.words('english'))
-        if word in stop_words:
+        if word in self.stop_words:
             return ''
         else:
             return word
@@ -257,6 +348,15 @@ class Tex_Processing():
 
 
 if __name__ == '__main__':
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\doc_dict.pkl', 'rb') as f:
+        doc_dict = pickle.load(f)
     PCS = Tex_Processing(data_dir=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Misc_Data\raw_ricoparas.pkl',
-                         vocab_dir=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ranked_vocab.pkl')
-    PCS.main(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data_01.pkl')
+                         vocab_dir=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word_Embeddings\Rico-Corpus\ranked_vocab.pkl',
+                         doc_dict=doc_dict
+                         )
+
+    vocab_dict = PCS.build_vocab()
+    ranked_vocab = PCS.rank_vocab(vocab_dict, 2)
+    PCS.encode_paras(ranked_vocab)
+
+    # PCS.main(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data_02.pkl')

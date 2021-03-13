@@ -237,12 +237,25 @@ class Atom_FFNN:
             # layers.GlobalAveragePooling1D(),
 
             # layers.Dense(self.dense2, activation='relu', input_shape=(2,)),
-            layers.Dense(self.dense2, input_shape=(self.dense2,), kernel_initializer=winit, bias_initializer=binit),
-            # layers.Dense(30, activation='tanh'),
+            # layers.Dense(self.dense2, input_shape=(self.dense2,), kernel_initializer=winit, bias_initializer=binit),
+            # # layers.Dense(30, activation='tanh'),
+            # # layers.Dropout(self.drop_per),
+            # layers.Dense(260, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
+            # # layers.Dropout(self.drop_per),
+            # layers.Dense(13, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
+            # layers.Dense(self.dense1, activation='linear', kernel_initializer=winit, bias_initializer=binit)
+
+            layers.Dense(30, input_shape=(self.dense2,), kernel_initializer=winit, bias_initializer=binit, activation='tanh'),
+            layers.Dense(270, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
             # layers.Dropout(self.drop_per),
-            layers.Dense(260, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
-            # layers.Dropout(self.drop_per),
-            layers.Dense(13, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
+            layers.Dense(26, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
+            # # layers.Dropout(self.drop_per),
+            # layers.Dense(8, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
+            # layers.Dense(8, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
+            # layers.Dense(8, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
+            # layers.Dense(8, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
+            # layers.Dense(8, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
+            # layers.Dense(8, activation='tanh', kernel_initializer=winit, bias_initializer=binit),
             layers.Dense(self.dense1, activation='linear', kernel_initializer=winit, bias_initializer=binit)
         ])
 
@@ -620,12 +633,12 @@ if __name__ == '__main__':
     # with tf.device('/cpu:0'):
         set_batch_size = 5
         set_epochs = 1
-        learn_rate = 0.005
+        learn_rate = 0.00044
         # curdim = 0
         model_paths = [
-            Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_00'),
-            Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_01'),
-            Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh_02'),
+            Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\model500_3dims_260tanh-26tanh\model500_3dims_260tanh-26tanh_00'),
+            # Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_50dims\BOWavg_rico\W_100_output_3Dims\model500_3dims_260tanh_01'),
+            # Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_50dims\BOWavg_rico\W_100_output_3Dims\model500_3dims_260tanh_02'),
             #     Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_03'),
             #     Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_04'),
             #     Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_10dims\BOWavg_rico\model50_10dims_05'),
@@ -651,7 +664,7 @@ if __name__ == '__main__':
                 regression=True,
                 # classification=True,
                 # model_path=model_paths[dim],
-                # save_model_path=model_paths[dim],
+                save_model_path=model_paths[dim],
                 current_dim=dim,
                 # current_dim=curdim,
                 test_path=te_path,
@@ -690,7 +703,7 @@ if __name__ == '__main__':
                 epochs=set_epochs,
                 regression=True,
                 # classification=True,
-                # model_path=model_paths[dim],
+                model_path=model_paths[dim],
                 save_model_path=model_paths[dim],
                 current_dim=dim,
                 # current_dim=curdim,
@@ -712,9 +725,9 @@ if __name__ == '__main__':
                 restr[dim, ii] = trloss[0]
 
                 AFF.save_model()
-                keras.backend.clear_session()
-                reste[dim, ii], _ = AFF.test()
 
+                reste[dim, ii] = AFF.test()
+                keras.backend.clear_session()
         #         num_nulls = null_arr.shape[2]
         #         for jj in range(num_nulls):
         #             AFF = Atom_FFNN(
@@ -743,18 +756,18 @@ if __name__ == '__main__':
         #             null[dim, ii, jj], _ = AFF.test_nullset()
         #
         #
-        with open(
-                Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl'),
-                'rb') as f10:
-            graph_dict = pickle.load(f10)
-        # graph_dict = dict()
+        # with open(
+        #         Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_50dims\results_3dims.pkl'),
+        #         'rb') as f10:
+        #     graph_dict = pickle.load(f10)
+        graph_dict = dict()
         #
         # null_avg = np.average(null, axis=2)
 
-        param_tr = 'ff_500ep_train_rico_BOWsum_w_100_3dim_260tanh-13tanh'
-        param_te = 'ff_500ep_test_rico_BOWsum_w_100_3dim_260tanh-13tanh'
+        param_tr = 'ff_500ep_train_rico_BOWsum_w_100_3dim_tanh260_tanh26'
+        param_te = 'ff_500ep_test_rico_BOWsum_w_100_3dim_tanh260_tanh26'
         # param_null = 'ff_50ep_nullset_rico10dims_ndelta_w_500_3dim_tanh_02'
-        param_pred = 'ff_500ep_pred_rico_BOWsum_w_100_3dim_260tanh-13tanh'
+        param_pred = 'ff_500ep_pred_rico_BOWsum_w_100_3dim_tanh260_tanh26'
 
         dict1['loss'] = restr
         dict1['epochs'] = epochs
@@ -806,7 +819,7 @@ if __name__ == '__main__':
         graph_dict[param_pred] = dict4
 
         with open(
-                Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\results_3dims.pkl'),
+                Path(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\results_tanh260_tanh26.pkl'),
                 'wb') as f11:
             pickle.dump(graph_dict, f11)
 

@@ -170,7 +170,6 @@ class Learn_Master():
 
         self.kt_dir= kt_directory
 
-        self.bestcount = []
 
     # def label_pairing(self):
     #     from atom_tag_pairing import Atom_Tag_Pairing
@@ -495,7 +494,7 @@ class Learn_Master():
 
     def phase0(self):
         master_dict = self.saver['master_dict']
-
+        dict_template = self.saver['dict_template']
 
         count = 0
         obj = np.zeros((1, self.nvar), dtype='int32')
@@ -547,6 +546,7 @@ class Learn_Master():
         count = self.saver['count']
         curfit = self.saver['curfit']
         master_dict = self.saver['master_dict']
+        dict_template = self.saver['dict_template']
         mu = self.saver['mu']
         newfit = self.saver['newfit']
         dict_template = self.saver['dict_template']
@@ -590,6 +590,7 @@ class Learn_Master():
                     self.save_checkpoint_results(dict_template, count, results, mesh[ii, :], tuners, best=False)
 
                 if meshfit < curfit:
+                    oldfit = curfit
                     curfit = meshfit
 
                     objnew = mesh[ii, :]
@@ -623,8 +624,9 @@ class Learn_Master():
 
 
             elif changeflag == 1:
+                changeflag = 0
                 self.saver['iter'] = 0
-                self.saver['changeflag'] = changeflag
+
                 self.saver['phase'] = 2
                 self.saver['objnew'] = objnew
                 self.saver['tuners'] = best_tuner
@@ -656,7 +658,7 @@ class Learn_Master():
 
         objnew = self.saver['objnew']
         tuners = self.saver['tuners']
-
+        dict_template = self.saver['dict_template']
         count = self.saver['count']
         bestcount = self.saver['bestcount']
         newfit = self.saver['newfit']
@@ -856,15 +858,18 @@ class Learn_Master():
         try:
             with open(self.checkpoint_filepath, 'rb') as f:
                 cresults = pickle.load(f)
+
+                bestcount = cresults[dict_template + '_bestcount']
         except:
             cresults = dict()
+            bestcount = []
 
         cresults[dict_template + '{}'.format(count)] = results
         cresults[dict_template + '_obj_' + '{}'.format(count)] = obj
         cresults[dict_template + '_tuner_' + '{}'.format(count)] = tuner
         if best:
-            self.bestcount.append(count)
-            cresults[dict_template + '_bestcount'] = self.bestcount
+            bestcount.append(count)
+            cresults[dict_template + '_bestcount'] = bestcount
         with open(self.checkpoint_filepath, 'wb') as f:
             pickle.dump(cresults, f)
 
@@ -888,11 +893,15 @@ class Learn_Master():
     def gen_random_loss(self):
         return np.random.rand()
 
-    def train_best_hps(self, tuners, objectives, train_epochs, num_nulls=50, predict=False):
+    def train_best_hps(self, tuners, objectives, train_epochs, num_nulls=50, predict=False, saver_path='untitled',
+                       curdim=0, import_model=None
+                       ):
 
         obj = self.enforce_bounds(objectives)
         obj = self.intcons(obj)
         obj = self.build_objdataset(obj)
+
+
 
 
         dimsout = self.output_dims[obj[0, 2]]
@@ -915,11 +924,29 @@ class Learn_Master():
         restr = np.empty((dimsout, train_epochs))
         reste = np.empty((dimsout, train_epochs))
 
+
+        if saver_path != 'untitled':
+            if os.path.exists(saver_path):
+                with open(saver_path, 'rb') as f:
+                    saver = pickle.load(f)
+
+                restr = saver['restr']
+                reste = saver['reste']
+                resnull = saver['resnull']
+
+            else:
+                saver = dict()
+
         if self.nn_architectures[obj[0, 6]] == 'ff':
 
-            for dim in range(dimsout):
+            for dim in range(curdim, dimsout):
                 best_hps = tuners[dim].get_best_hyperparameters(num_trials=1)[0]
-                model = tuners[dim].hypermodel.build(best_hps)
+                if import_model is not None:
+                    model = import_model[dim]
+                else:
+                    model = tuners[dim].hypermodel.build(best_hps)
+
+
                 print('---------------------------------------------------------------------------------------------')
                 print('Starting dimension {dim}'.format(dim=dim))
                 print('---------------------------------------------------------------------------------------------')
@@ -980,10 +1007,20 @@ class Learn_Master():
                             resnull[dim, ep, jj] = FF.test_nullset()
                     keras.backend.clear_session()
 
+                saver['restr'] = restr
+                saver['reste'] = reste
+                saver['resnull'] = resnull
+
+                with open(saver_path, 'wb') as f:
+                    pickle.dump(saver, f)
+
         else:
             for dim in range(dimsout):
                 best_hps = tuners[dim].get_best_hyperparameters(num_trials=1)[0]
-                model = tuners[dim].hypermodel.build(best_hps)
+                if import_model is not None:
+                    model = import_model[dim]
+                else:
+                    model = tuners[dim].hypermodel.build(best_hps)
                 print('---------------------------------------------------------------------------------------------')
                 print('Starting dimension {dim}'.format(dim=dim))
                 print('---------------------------------------------------------------------------------------------')
@@ -1046,6 +1083,12 @@ class Learn_Master():
                             )
                             resnull[dim, ep, jj] = RNN.test_nullset()
                     keras.backend.clear_session()
+                saver['restr'] = restr
+                saver['reste'] = reste
+                saver['resnull'] = resnull
+
+                with open(saver_path, 'wb') as f:
+                    pickle.dump(saver, f)
 
         if predict:
             prediction = []; predlabels = []
@@ -1105,12 +1148,60 @@ class Learn_Master():
             return [restr, reste]
 
 
+    def predict(self, obj, models):
+
+        self.build_objdataset(obj)
+        dimsout = len(models)
+        prediction = []
+        predlabels = []
+
+
+        if self.nn_architectures[obj[0, 6]] == 'ff':
+            for dim in range(dimsout):
+                FF = Atom_FFNN(
+                    data=self.train,
+                    train_labels=self.train_labels,
+                    test=self.test,
+                    test_labels=self.test_labels,
+                    nullset=self.test,
+                    # nullset_labels=null_labels,
+                    current_dim=dim,
+                    model_path=models[dim],
+                    # save_model_path=self.savepath_model[dim],
+                    optimize=False,
+                    regression=True,
+                    epochs=1,
+                )
+                prediction.append(FF.predict())
+            predlabels.append(self.train_labels)
+
+        else:
+            for dim in range(dimsout):
+                RNN = Atom_RNN(
+                    data=self.ordtrain,
+                    train_labels=self.ordtrain_labels,
+                    test=self.ordtest,
+                    test_labels=self.ordtest_labels,
+                    nullset=self.ordtest,
+                    # nullset_labels=null_labels,
+                    steps=self.rnn_steps,
+                    curdim=self.curout_dim,
+                    model_path=models[dim],
+                    # save_model_path=self.savepath_model[dim],
+                    optimize=False,
+                    regression=True,
+                    epochs=1,
+                )
+                prediction.append(RNN.predict())
+            predlabels.append(self.ordtrain_labels)
+
+        return prediction, predlabels
 
     def parent_select(self, obj, fit, numparents, Y=2):
         # tournament selection parents
         # Y = 2 is most common and is the current default.
         # changing Y changes selection pressure
-        parents = np.zeros(numparents, obj.shape[1])
+        parents = np.zeros([numparents, obj.shape[1]], dtype='int32')
 
         for ii in range(numparents):
             r = np.random.randint(0, self.npop, (Y,)) # random indices to pick competing parents
@@ -1118,46 +1209,78 @@ class Learn_Master():
             for jj in range(Y):
                 randfits.append(fit[r[jj]]) # group parents we want to compare
             m = min(randfits)
-            idx = fit.index(m)
-            parents[ii, :] = obj[idx, :]
+
+            idx = np.where(fit==m)
+            parents[ii, :] = obj[idx[0], :]
 
         return parents
 
-    def crossover(self, parents):
+    def crossover(self, parents, mutation_rate):
         # one point crossover
-        children = np.zeros(parents)
+        children = np.zeros(parents.shape, dtype='int32')
+        assert children.shape[1] == self.nvar, "Children should have self.nvar genes"
         crosspoint = np.random.randint(0, self.nvar)
-        if parents % 2 != 0:
+        if parents.shape[0] % 2 != 0:
             raise ValueError("numparents must be an even integer")
-        shuffled = np.random.shuffle(parents) # shuffles parents along axis 0
+        shuffled = parents
+        np.random.shuffle(shuffled) # shuffles parents along axis 0
         for ii in range(0, len(parents), 2):
             children[ii, :crosspoint] = shuffled[ii, :crosspoint]
             children[ii, crosspoint:] = shuffled[ii+1, crosspoint:]
+            for jj in range(children.shape[1]):
+                # mutation
+                rmut = np.random.rand()
+                if rmut < mutation_rate:
+                    children[ii, jj] = np.random.randint(self.lb[jj], self.ub[jj])
             children[ii+1, :crosspoint] = shuffled[ii, :crosspoint]
             children[ii+1, crosspoint:] = shuffled[ii+1, crosspoint:]
-
+            for jj in range(children.shape[1]):
+                # mutation
+                rmut = np.random.rand()
+                if rmut < mutation_rate:
+                    children[ii+1, jj] = np.random.randint(self.lb[jj], self.ub[jj])
 
         return children
 
-    # def mutate(self):
-        
 
-    def genetic_alg(self, numparents, npop, mutation_rate=0.2):
-        if numparents > npop:
-            raise ValueError("numparents must be less than npop")
+
+    def genetic_alg(self, numparents, npop, gasaver, save_every, mutation=0.2, stagnate=False, trainfor=0, n_nulls=0):
         self.npop = npop
-        obj = np.zeros((self.npop, self.nvar), dtype='int32')
-        fit = np.zeros(self.npop)
-        for jj in range(self.npop):
-            for ii in range(self.nvar):
-                # generates npop random solutions
-                obj[jj, ii] = np.random.randint(self.lb[ii], self.ub[ii])
+        if os.path.exists(gasaver):
+            with open(gasaver, 'rb') as f:
+                saver = pickle.load(f)
 
-        iter = 0
-        while iter < 1000:
-            iter = 1111
+            obj = saver['obj']
+            fit = saver['fit']
+            iter = saver['iter']
+            lowestfit = saver['lowestfit']
+
+        else:
+            saver = dict()
+            if numparents > npop:
+                raise ValueError("numparents must be less than npop")
+
+            obj = np.zeros((self.npop, self.nvar), dtype='int32')
+            fit = np.zeros(self.npop)
             for jj in range(self.npop):
-                obj[jj, :] = self.intcons(obj[jj, :])
+                for ii in range(self.nvar):
+                    # generates npop random solutions
+                    obj[jj, ii] = np.random.randint(self.lb[ii], self.ub[ii])
+            iter = 0
+            lowestfit = np.inf
+            saver['lfits'] = []
+            saver['better_iters'] = []
+            saver['results'] = []
+            saver['mintuners'] = []
+
+        while iter < self.maxiter:
+            if stagnate: # reduce mutation rate over time?
+                mutation_rate = mutation * (self.maxiter - iter)/self.maxiter
+            else:
+                mutation_rate = mutation
+            iter += 1
+            poptuners = []
+            for jj in range(self.npop):
                 obj[jj, :] = self.enforce_bounds(obj[jj, :])
                 obj[jj, :] = self.build_objdataset(obj[jj, :])
                 fit[jj], _, tuners = self.ff_fitness(
@@ -1168,18 +1291,53 @@ class Learn_Master():
                     nn_architecture=self.nn_architectures[obj[jj, 6]],
                     hyperoptimizer=self.hyperoptimizers[obj[jj, 7]]
                 )
+                poptuners.append(tuners)
+
+            minfit = min(fit)
+            if minfit < lowestfit:
+                lowestfit = minfit
+                m = np.where(fit == minfit)
+                midx = m[0]
+                minidx = midx[0]
+                minobj = obj[minidx, :]
+                mintuners = poptuners[minidx]
+
+                if trainfor > 0:
+                    results = self.train_best_hps(mintuners, minobj, trainfor, n_nulls)
+                    allresults = saver['results']
+                    allresults.append(results)
+                    saver['lfits'].append(lowestfit)
+                    saver['better_iters'].append(iter)
+                    saver['results'] = allresults
+                    saver['lowestfit'] = lowestfit
+                    saver['mintuners'].append(mintuners)
+
+            if iter % save_every == 0:
+                saver['fit'] = fit
+                saver['obj'] = obj
+                saver['iter'] = iter
+                saver['tuners'] = poptuners
+                with open(gasaver, 'wb') as f:
+                    pickle.dump(saver, f)
 
 
+            parents = self.parent_select(obj, fit, numparents, Y=2)
+            children = self.crossover(parents, mutation_rate)
 
+            obj = np.concatenate((parents, children), axis=0)
+            np.random.shuffle(obj)
+
+        with open(gasaver, 'wb') as f:
+            pickle.dump(saver, f)
 
     # def timer_interrupt(self):
     #     import threading
-    #     import time
+    #
     #
     #     hours = 7.9
     #
     #     runtime = float(hours*3600)
-    #     t = threading.Timer(runtime, self.save_checkpoint_results(self.dict_template, self.count, self.results, self.obj, self.tuner, self.model))
+    #     t = threading.Timer(runtime, self.save_checkpoint_results(dict_template, count, results, obj, tuner, model))
 
 
 
@@ -1231,8 +1389,8 @@ if __name__ == '__main__':
         fib.remove(1) # removes first 1
         return fib
 
-    weighting_factor = fibonacci(10)
-    # weighting_factor = [1]
+    # weighting_factor = fibonacci(10)
+    weighting_factor = [1]
     optimizers = ['sgd', 'adam', 'adagrad', 'rmsprop', 'adadelta', 'adamax']
 
     label_paths = [
@@ -1307,7 +1465,7 @@ if __name__ == '__main__':
     # nn_arch = ['ff']
     curdim = 0
 
-    run_name = 's25ep_all_00'
+    run_name = 'ga_s25ep_all_00'
     saverpath = '{}.pkl'.format(run_name)
 
     fit_savepath = os.path.join(up_dir, 'Learn_Master/checkpoints/fitness_{run_name}.pkl'.format(run_name=run_name))
@@ -1334,7 +1492,7 @@ if __name__ == '__main__':
         mu0=3,
         alpha=1,
         delta=1,
-        maxiter=10,
+        maxiter=30,
         savepath_model=model_paths,
         rnn_steps=3,
         kt_directory='test1',
@@ -1342,25 +1500,103 @@ if __name__ == '__main__':
         raw_paras=paras,
         fitness_savepath=fit_savepath,
     )
-# PS script
-    try:
-        with open(os.path.join(up_dir,'Learn_Master/optimized_models/results_{run_name}.pkl'.format(run_name=run_name)), 'rb') as f:
-            optimization_results = pickle.load(f)
-    except:
-        optimization_results = dict()
-    results = dict()
-
-    dict_template = 'improved_meta_set'
-    objectives, tuner, optimization_results['optimizing'] = LM.PS_integer(train_for=1, dict_template=dict_template, master_dict=results, n_nulls=0, saver_path=saverpath)
-
-    with open(os.path.join(up_dir,'Learn_Master/optimized_models/results_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
-        pickle.dump(optimization_results, f)
 
 
-    with open(os.path.join(up_dir,'Learn_Master/best/objectives_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
-        pickle.dump(objectives, f)
-    with open(os.path.join(up_dir,'Learn_Master/best/tuner_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
-        pickle.dump(tuner, f)
+### GA script
+#     numparents = 10
+#     npop = 20
+#     mutate_rate = 0.3
+#     ga_run_name = 'ga_tu25_pop20_tr25_stag'
+#     # try:
+#     #     with open(os.path.join(up_dir,'Learn_Master/optimized_models/ga_results_{run_name}.pkl'.format(run_name=run_name)), 'rb') as f:
+#     #         optimization_results = pickle.load(f)
+#     # except:
+#     #     optimization_results = dict()
+#     # results = dict()
+#
+#     gasaver = os.path.join(up_dir,'Learn_Master/GA_files/{}.pkl'.format(ga_run_name))
+#
+#     LM.genetic_alg(numparents, npop, gasaver, 1, mutation=mutate_rate, stagnate=True, trainfor=25, n_nulls=0)
+
+    # with open(os.path.join(up_dir,'Learn_Master/optimized_models/ga_results_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
+    #     pickle.dump(optimization_results, f)
+    #
+    #
+    # with open(os.path.join(up_dir,'Learn_Master/best/ga_objectives_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
+    #     pickle.dump(objectives, f)
+    # with open(os.path.join(up_dir,'Learn_Master/best/ga_tuner_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
+    #     pickle.dump(tuner, f)
+
+
+### GA Train and predict
+    # pred_name = 'ga_tu25_pop20_tr25_stag_pred'
+    #
+    #
+    #
+    # with open(os.path.join(up_dir, 'Learn_Master/GA_files/ga_tu25_pop20_tr25_stag.pkl'), 'rb') as f:
+    #     graph_dict = pickle.load(f)
+    #
+    # kerasmodel = keras.models.load_model(os.path.join(up_dir, 'Shuffled_Data_1/Rico-Corpus/model_10000ep_10dims/BOWavg_rico/Output_10Dims/model50_10dims_03'))
+    #
+    # # bestcount, _ = find_mins(ftr)
+    #
+    # pred_res = []
+    # train_res = []
+    #
+    # listoftuners = graph_dict['mintuners']
+    # tuners = listoftuners[0]
+    #
+    # best_hps = tuners[0].get_best_hyperparameters(num_trials=1)[0]
+    #
+    # model = tuners[0].hypermodel.build(best_hps)
+    #
+    # obj = [1, 7, 2, 1, 3, 5, 0, 1]
+    # obj = np.asarray(obj)
+    # obj = np.reshape(obj, (1, obj.shape[0]))
+    #
+    #
+    #
+    # epochs = 500
+    #
+    # # for jj, idx in enumerate(bestcount):
+    # tres, pres = LM.train_best_hps(tuners, obj, epochs, num_nulls=25, predict=True,
+    #                                saver_path=os.path.join(up_dir,'Learn_Master/GA_files/saver.pkl'),
+    #                                curdim=2,
+    #                                )
+    # # print('Complete round {} of {}'.format(jj, len(bestcount)))
+    # pred_res.append(pres)
+    # train_res.append(tres)
+    # with open(os.path.join(up_dir, 'Learn_Master/predictions/chk/chkprediction_{name}.pkl'.format(name=pred_name)), 'wb') as f:
+    #     pickle.dump(pred_res, f)
+    # with open(os.path.join(up_dir, 'Learn_Master/predictions/chk/chkresults_{name}.pkl'.format(name=pred_name)), 'wb') as f:
+    #     pickle.dump(train_res, f)
+    #
+    # with open(os.path.join(up_dir, 'Learn_Master/predictions/prediction_{}.pkl'.format(pred_name)), 'wb') as f:
+    #     pickle.dump(pred_res, f)
+    #
+    # with open(os.path.join(up_dir,'Learn_Master/predictions/results_{}'.format(pred_name)), 'wb') as f:
+    #     pickle.dump(train_res, f)
+
+
+### PS script
+#     try:
+#         with open(os.path.join(up_dir,'Learn_Master/optimized_models/results_{run_name}.pkl'.format(run_name=run_name)), 'rb') as f:
+#             optimization_results = pickle.load(f)
+#     except:
+#         optimization_results = dict()
+#     results = dict()
+#
+#     dict_template = 'improved_meta_set'
+#     objectives, tuner, optimization_results['optimizing'] = LM.PS_integer(train_for=1, dict_template=dict_template, master_dict=results, n_nulls=0, saver_path=saverpath)
+#
+#     with open(os.path.join(up_dir,'Learn_Master/optimized_models/results_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
+#         pickle.dump(optimization_results, f)
+#
+#
+#     with open(os.path.join(up_dir,'Learn_Master/best/objectives_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
+#         pickle.dump(objectives, f)
+#     with open(os.path.join(up_dir,'Learn_Master/best/tuner_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
+#         pickle.dump(tuner, f)
     # with open(os.path.join(up_dir,'Learn_Master/best/model.pkl'), 'wb') as f:
     #     pickle.dump(model, f)
     # for ii, mod in enumerate(model):
@@ -1370,49 +1606,66 @@ if __name__ == '__main__':
 
 
 
-# prediction script
-#     from Lib.Misc_Data.Pre_Process import breakup
-#     pred_name = 's10ep_optim01'
-#     num = 84
-#
-#     dim = 0
-#     with open(os.path.join(up_dir, 'Learn_Master/checkpoints/cresults_{}.pkl'.format(pred_name)), 'rb') as f:
-#         graph_dict = pickle.load(f)
-#
-#
-#     bbestcount = graph_dict['improved_metaset_actual_bestcount']
-#     bestcount = bbestcount[1:]
-#     train, test, ftr, fte = breakup(graph_dict, num, dim)
-#     # bestcount, _ = find_mins(ftr)
-#     tuners = []
-#     objectives = []
-#     train_res = []
-#     pred_res = []
-#     act = []
-#     for idx in bestcount:
-#         key = 'improved_meta_set_tuner_{}'.format(idx)
-#         tuners.append(graph_dict[key])
-#         key = 'improved_meta_set_obj_{}'.format(idx)
-#         objectives.append(graph_dict[key])
-#
-#
-#
-#     epochs = 200
-#
-#     # for jj, idx in enumerate(bestcount):
-#     tres, pres = LM.train_best_hps(tuners[-1], objectives[-1], epochs, num_nulls=5, predict=True)
-#     # print('Complete round {} of {}'.format(jj, len(bestcount)))
-#     pred_res.append(pres)
-#     train_res.append(tres)
-#     with open(os.path.join(up_dir, 'Learn_Master/predictions/chk/chkprediction_{name}_2.pkl'.format(name=pred_name)), 'wb') as f:
-#         pickle.dump(pred_res, f)
-#     with open(os.path.join(up_dir, 'Learn_Master/predictions/chk/chkresults_{name}_2.pkl'.format(name=pred_name)), 'wb') as f:
-#         pickle.dump(train_res, f)
-#
-#     with open(os.path.join(up_dir, 'Learn_Master/predictions/prediction_{}.pkl'.format(pred_name)), 'wb') as f:
-#         pickle.dump(pred_res, f)
-#
-#     with open(os.path.join(up_dir,'Learn_Master/predictions/results_{}'.format(pred_name)), 'wb') as f:
-#         pickle.dump(train_res, f)
+### prediction script
+    # from Lib.Misc_Data.Pre_Process import breakup
+    # pred_name = 'ga_tu25_pop20_tr25_stag_pred'
+    # num = 84
+    #
+    # dim = 0
+    # with open(os.path.join(up_dir, 'Learn_Master/checkpoints/cresults_{}.pkl'.format(pred_name)), 'rb') as f:
+    #     graph_dict = pickle.load(f)
+    #
+    #
+    # bbestcount = graph_dict['improved_metaset_actual_bestcount']
+    # bestcount = bbestcount[1:]
+    # train, test, ftr, fte = breakup(graph_dict, num, dim)
+    # # bestcount, _ = find_mins(ftr)
+    # tuners = []
+    # objectives = []
+    # train_res = []
+    # pred_res = []
+    # act = []
+    # for idx in bestcount:
+    #     key = 'improved_meta_set_tuner_{}'.format(idx)
+    #     tuners.append(graph_dict[key])
+    #     key = 'improved_meta_set_obj_{}'.format(idx)
+    #     objectives.append(graph_dict[key])
+    #
+    #
+    #
+    # epochs = 500
+    #
+    # # for jj, idx in enumerate(bestcount):
+    # tres, pres = LM.train_best_hps(tuners[-1], objectives[-1], epochs, num_nulls=5, predict=True)
+    # # print('Complete round {} of {}'.format(jj, len(bestcount)))
+    # pred_res.append(pres)
+    # train_res.append(tres)
+    # with open(os.path.join(up_dir, 'Learn_Master/predictions/chk/chkprediction_{name}_2.pkl'.format(name=pred_name)), 'wb') as f:
+    #     pickle.dump(pred_res, f)
+    # with open(os.path.join(up_dir, 'Learn_Master/predictions/chk/chkresults_{name}_2.pkl'.format(name=pred_name)), 'wb') as f:
+    #     pickle.dump(train_res, f)
+    #
+    # with open(os.path.join(up_dir, 'Learn_Master/predictions/prediction_{}.pkl'.format(pred_name)), 'wb') as f:
+    #     pickle.dump(pred_res, f)
+    #
+    # with open(os.path.join(up_dir,'Learn_Master/predictions/results_{}'.format(pred_name)), 'wb') as f:
+    #     pickle.dump(train_res, f)
 
 
+### GA prediction script
+    pred_name = 'ga_tu25_pop20_tr25_stag_pred'
+
+    optimized_models = [os.path.join(up_dir,'Learn_Master/optimized_models/model_00'),
+                        os.path.join(up_dir,'Learn_Master/optimized_models/model_01')]
+    obj = [1, 7, 2, 1, 3, 5, 0, 1]
+    obj = np.asarray(obj)
+    obj = np.reshape(obj, (1, obj.shape[0]))
+
+    prediction, predlabels = LM.predict(obj, optimized_models)
+
+
+    with open( os.path.join(up_dir, 'Learn_Master/predictions/pred_{}.pkl'.format(pred_name)), 'wb') as f:
+        pickle.dump(prediction, f)
+
+    with open(os.path.join(up_dir, 'Learn_Master/predictions/predlabels_{}.pkl'.format(pred_name)), 'wb') as f:
+        pickle.dump(predlabels, f)

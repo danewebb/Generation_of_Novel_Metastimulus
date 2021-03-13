@@ -205,7 +205,7 @@ def comparative_bar_plot(prediction, actual, nbars, y, title, dim=1, width=0.35,
     plt.grid()
     plt.autoscale(enable=True, axis='x', tight=True)
     plt.xticks([50], visible=True, rotation="horizontal")
-    savefig = 'D:/Documents/THESIS/Figures/HCI_2021/CBP_dim{}.pdf'.format(dim)
+    savefig = 'D:/Documents/THESIS/Figures/HCI_2021/CBP_dim{}_00.pdf'.format(dim)
     plt.savefig(savefig, bbox_inches='tight', format='pdf')
 
 
@@ -407,89 +407,89 @@ if __name__ == '__main__':
     # with open('../Learn_Master/checkpoints/cresults_s05ep_pen01.pkl', 'rb') as f1:
     #     graph_dict = pickle.load(f1)
 
-    with open('../Learn_Master/predictions/chk/chkprediction_s10ep_optim01_2.pkl', 'rb') as f:
-        pred = pickle.load(f)
-
-    with open('../Learn_Master/predictions/chk/chkresults_s10ep_optim01_2.pkl', 'rb') as f:
-        train_res = pickle.load(f)
-
-    train = []
-    test = []
-    null = []
-    ftr = []
-    fte = []
-    fnu = []
-
-        # sett = graph_dict['improved_meta_set{}'.format(ii)]
-    sett = train_res[0]
-    tr = sett[0]
-    te = sett[1]
-    nu = sett[2]; nu = np.average(nu, axis=2)
-        # ftr.append(tr[dim][-1])
-        # fte.append(te[dim][-1])
-        # fnu.append(nu[dim][-1])
-
-
-    # def plot_metaloss(train, test, title, colors, x, y, null=None, linestyles=None, order=None, dim=0, merge=False):
-
-
-
-
-
-    # for d in range(4):
-    #     y = 'dim {} loss'.format(d)
-    #     plot_metaloss(tr, te, '', color_list, x, y, null=nu, linestyles=linestyles, order=layer_order, dim=d, merge=False)
-
-
-
-# plot_loss
-#     train = []; test = []; null = []
-    # ftr = []; fte = []; fnu = []
-    # for ii in range(1, num+1):
-    #     # sett = graph_dict['improved_meta_set{}'.format(ii)]
-    #     sett = train_res
-    #     tr = sett[0]; train.append(tr)
-    #     te = sett[1]; test.append(te)
-    #     nu = sett[2]; null.append(nu); nu = np.average(nu, axis=2)
-    #     ftr.append(tr[dim][-1])
-    #     fte.append(te[dim][-1])
-    #     fnu.append(nu[dim][-1])
-    #
-    # # bestcount = graph_dict['improved_meta_set_bestcount']
-    # # plot_metaloss(train, test, title, colors, x, y, null=null, linestyles=linestyles, order=layer_order, merge=True, dim=dim)
-    # ftitle = 'Final Loss For Dimension {}'.format(dim)
-    # x = 'Runs'
-    # ylim = (5e-3, 5e-2)
-    # plot_final_loss(ftr, fte, ftitle, x, y, colors, bestcount, ylim, null=None, linestyles=linestyles, order=layer_order)
-
-
-
-# pred v actual
-    with open('../Learn_Master/predictions/chk/chkprediction_s10ep_optim01_0.pkl', 'rb') as f:
-        pred_act = pickle.load(f)
-
-    p = pred_act[0]
-    p = np.asarray(p)
-    p = np.reshape(p, (477, 4))
-    a = pred_act[1]
-
-
-    # act = a[:, 0]
-    # act = np.reshape(act, (act.shape[0], 1))
-
-    act = a[0]
-    nbars = 50
-    for d in range(4):
-        pred = p
-
-        y = 'dimension {} component'.format(d)
-        title = ''
-        comparative_bar_plot(pred[:50, :], act[:50, :], nbars, y, title, dim=d, sort='')
-
-
-    pred = pred[:, :3]
-    act = act[:, :3]
-    scatterplot3d(pred, act, type='vector', num_points=5, colors=color_list, styles=[linestyles[0], linestyles[1]])
+#     with open('../Learn_Master/predictions/chk/chkprediction_s10ep_optim01_2.pkl', 'rb') as f:
+#         pred = pickle.load(f)
+#
+#     with open('../Learn_Master/predictions/chk/chkresults_s10ep_optim01_2.pkl', 'rb') as f:
+#         train_res = pickle.load(f)
+#
+#     train = []
+#     test = []
+#     null = []
+#     ftr = []
+#     fte = []
+#     fnu = []
+#
+#         # sett = graph_dict['improved_meta_set{}'.format(ii)]
+#     sett = train_res[0]
+#     tr = sett[0]
+#     te = sett[1]
+#     nu = sett[2]; nu = np.average(nu, axis=2)
+#         # ftr.append(tr[dim][-1])
+#         # fte.append(te[dim][-1])
+#         # fnu.append(nu[dim][-1])
+#
+#
+#     # def plot_metaloss(train, test, title, colors, x, y, null=None, linestyles=None, order=None, dim=0, merge=False):
+#
+#
+#
+#
+#
+#     # for d in range(4):
+#     #     y = 'dim {} loss'.format(d)
+#     #     plot_metaloss(tr, te, '', color_list, x, y, null=nu, linestyles=linestyles, order=layer_order, dim=d, merge=False)
+#
+#
+#
+# # plot_loss
+# #     train = []; test = []; null = []
+#     # ftr = []; fte = []; fnu = []
+#     # for ii in range(1, num+1):
+#     #     # sett = graph_dict['improved_meta_set{}'.format(ii)]
+#     #     sett = train_res
+#     #     tr = sett[0]; train.append(tr)
+#     #     te = sett[1]; test.append(te)
+#     #     nu = sett[2]; null.append(nu); nu = np.average(nu, axis=2)
+#     #     ftr.append(tr[dim][-1])
+#     #     fte.append(te[dim][-1])
+#     #     fnu.append(nu[dim][-1])
+#     #
+#     # # bestcount = graph_dict['improved_meta_set_bestcount']
+#     # # plot_metaloss(train, test, title, colors, x, y, null=null, linestyles=linestyles, order=layer_order, merge=True, dim=dim)
+#     # ftitle = 'Final Loss For Dimension {}'.format(dim)
+#     # x = 'Runs'
+#     # ylim = (5e-3, 5e-2)
+#     # plot_final_loss(ftr, fte, ftitle, x, y, colors, bestcount, ylim, null=None, linestyles=linestyles, order=layer_order)
+#
+#
+#
+# # pred v actual
+#     with open('../Learn_Master/predictions/chk/chkprediction_s10ep_optim01_0.pkl', 'rb') as f:
+#         pred_act = pickle.load(f)
+#
+#     p = pred_act[0]
+#     p = np.asarray(p)
+#     p = np.reshape(p, (477, 4))
+#     a = pred_act[1]
+#
+#
+#     # act = a[:, 0]
+#     # act = np.reshape(act, (act.shape[0], 1))
+#
+#     act = a[0]
+#     nbars = 50
+#     for d in range(4):
+#         pred = p
+#
+#         y = 'dimension {} component'.format(d)
+#         title = ''
+#         comparative_bar_plot(pred[:50, :], act[:50, :], nbars, y, title, dim=d, sort='')
+#
+#
+#     pred = pred[:, :3]
+#     act = act[:, :3]
+#     scatterplot3d(pred, act, type='vector', num_points=5, colors=color_list, styles=[linestyles[0], linestyles[1]])
 # comparative_bar_plot(prediction, actual, nbars, y, title, dim=1, width=0.35, sort='ascending', plotall=False)
 # scatterplot3d(prediction, actual, type='', num_points=20, colors=[], styles=[], seed=24)
 
@@ -515,40 +515,42 @@ if __name__ == '__main__':
     #
     #
     #
-    # # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\prediction.pkl', 'rb') as f3:
-    # #     pred = pickle.load(f3)
+    # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_2dims\BOWavg_rico\prediction.pkl', 'rb') as f3:
+    #     pred = pickle.load(f3)
+
+    #
+    #
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\train_labels.pkl', 'rb') as f4:
+        act = pickle.load(f4)
+
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Shuffled_Data_1\Rico-Corpus\model_10000ep_30dims\BOWsum_rico\W_100_output_3Dims\results_tanh260_tanh26.pkl', 'rb') as f4:
+        graph_dict = pickle.load(f4)
+
+
+    pred_dict = graph_dict[f'ff_500ep_pred_rico_BOWsum_w_100_3dim_tanh260_tanh26']
+    # pred01_dict = graph_dict[f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh_01']
+    # pred02_dict = graph_dict[f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh_02']
     # #
-    #
-    #
-    # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Ordered_Data\Rico-Corpus\model_10000ep_30dims\BOWsum\w100\train_labels.pkl', 'rb') as f4:
-    #     act = pickle.load(f4)
-    #
-    #
-    #
-    #
-    # # pred00_dict = graph_dict[f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh_00']
-    # # pred01_dict = graph_dict[f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh_01']
-    # # pred02_dict = graph_dict[f'rnn_100ep_pred_rico_BOWsum_w_100_3dim_100rnntanh-20tanh_02']
-    # # #
-    # # pred00 = pred00_dict['prediction']; pred00 = np.reshape(pred00, (pred00.shape[1], 1))
-    # # pred01 = pred01_dict['prediction']; pred01 = np.reshape(pred01, (pred01.shape[1], 1))
-    # # pred02 = pred02_dict['prediction']; pred02 = np.reshape(pred02, (pred02.shape[1], 1))
-    # # #
-    # # pred = np.concatenate((pred00, pred01, pred02), axis=1)
-    #
+    # pred00 = pred00_dict['prediction']; pred00 = np.reshape(pred00, (pred00.shape[1], 1))
+    # pred01 = pred01_dict['prediction']; pred01 = np.reshape(pred01, (pred01.shape[1], 1))
+    # pred02 = pred02_dict['prediction']; pred02 = np.reshape(pred02, (pred02.shape[1], 1))
+    # #
+    # pred = np.concatenate((pred00, pred01, pred02), axis=1)
+
     # pred_dict = graph_dict[f'rnn_500ep_pred_rico_BOWsum_w_100_3dims_rnntanh240-tanh111_5st']
-    # pred = pred_dict['prediction']
-    #
-    # title = f'Prediction vs. Actual\n rnn_500ep_pred_rico_BOWsum_w_100_3dims_rnntanh240-tanh111_5st'
-    #
-    # num = 50
+    pred = pred_dict['prediction']
+
+    title = f'Prediction vs. Actual\n rnn_500ep_pred_rico_BOWsum_w_100_3dims_rnntanh240-tanh111_5st'
+    nbars = 100
+    num = 50
     # ordered_components(pred, act, num, colors)
-    #
-    # nbars = 100
-    # ylab = f'Dimension 0{dim} Component'
-    #
-    # # comparative_bar_plot(pred, act, nbars, ylab, title, dim=dim, plotall=False)
-    #
-    # color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
-    # scatterplot3d(pred, act, type='vector', colors=color_list, num_points=5, styles = ['-', 'dashed'], seed=3)
+    # comparative_bar_plot(prediction, actual, nbars, y, title, dim=1, width=0.35, sort='ascending', plotall=False)
+    comparative_bar_plot(pred, act, nbars, y, title, dim=0)
+
+    ylab = f'Dimension 0{dim} Component'
+
+    # comparative_bar_plot(pred, act, nbars, ylab, title, dim=dim, plotall=False)
+
+    color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+    scatterplot3d(pred, act, type='vector', colors=color_list, num_points=5, styles = ['-', 'dashed'], seed=3)
 
