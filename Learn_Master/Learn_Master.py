@@ -46,8 +46,8 @@ class Learn_Master():
     """
     def __init__(self, dataset_dict, vocab, ordered_encdata, ordered_labels, input_dims, we_models, output_dims, keyword_weight_factor,
                  optimizers, atom_methods, nn_architectures, hyperoptimizers, ints, projections=None,
-                 savepath_model = None, kt_directory='untitled', fitness_savepath='fitness_savepath',
-                 NN_prebuilt_model=None, NNclasse=None,
+                 savepath_model = None, fitness_savepath='fitness_savepath',
+                 NN_prebuilt_model=None, NNclasse=None, kt_master_dir='untitled',
                  WE_classes=None, vocab_save_path='', data_save_path='', checkpoint_filepath='untitled_checkpoints',
                  projection=None, adjacency=None, curout_dim=0, raw_paras=None,
                  epochs=1, fitness_epochs=10, rnn_steps=3,
@@ -97,6 +97,8 @@ class Learn_Master():
               key weight, atom method, optimizer, NN arch, hyperoptimizers]
         """
 
+        # [0, 4, 2, 0, 2, 1, 0, 2]
+        # [~, 20, 4, 1, ndelta, adam, ff, hyperband]
 
 
         self.lb = [0, 0, 0, 0, 0, 0, 0, 0]
@@ -168,9 +170,18 @@ class Learn_Master():
         self.ordtrain = None; self.ordtrain_labels = None; self.ordtest = None; self.ordtest_labels = None
         self.train = None; self.train_labels = None; self.test = None; self.test_labels = None
 
-        self.kt_dir= kt_directory
+        # self.kt_dir = dict()
+        self.kt_master_dir = kt_master_dir
 
 
+        if os.path.exists(kt_master_dir + '/fits.pkl'):
+            with open(kt_master_dir + '/fits.pkl', 'rb') as f:
+                self.kt_fits = pickle.load(f)
+            with open(kt_master_dir + '/tuners.pkl', 'rb') as f:
+                self.trained_tuners = pickle.load(f)
+        else:
+            self.kt_fits = dict()
+            self.trained_tuners = dict()
     # def label_pairing(self):
     #     from atom_tag_pairing import Atom_Tag_Pairing
     #
@@ -220,6 +231,10 @@ class Learn_Master():
 
         atom_vecs = self.atom_embedding(atom_method, we_model, voc, key_weight, enc)
         self.split_shuff(atom_vecs, labels, input_dimension)
+
+        # self.kt_dir[str(obj)] = self.kt_master_dir + '/' + str(obj)
+
+
 
         return obj
 
@@ -318,12 +333,16 @@ class Learn_Master():
         return penloss
 
 
-
-    def ff_fitness(self, input_dim, out_dims, kweight, optimizer='sgd', nn_architecture='ff', hyperoptimizer='random'):
+    def ff_fitness(self, input_dim, out_dims, kweight, obj, optimizer='sgd', nn_architecture='ff', hyperoptimizer='random'):
         total_loss = []
         all_models = []
         all_tuners = []
 
+        # kt_dir = self.kt_dir[str(obj)]
+
+
+        if str(obj) in self.kt_fits.keys():
+            return self.kt_fits[str(obj)], self.trained_tuners[str(obj)]
         # with tf.device('/cpu:0'):
         for dim in range(out_dims):
             if nn_architecture == 'ff':
@@ -342,7 +361,7 @@ class Learn_Master():
                     optimize=True,
                     seed=24,
                     optimizer=optimizer,
-
+                    # kt_directory=kt_dir,
                     epochs=self.fitness_epochs,
                     initial_points=3,
                     hyper_maxepochs=3,
@@ -385,6 +404,7 @@ class Learn_Master():
                     optimize=True,
                     seed=24,
                     optimizer=optimizer,
+                    # kt_directory=kt_dir,
                     steps=self.rnn_steps,
                     epochs=self.fitness_epochs,
                     initial_points=3,
@@ -420,7 +440,11 @@ class Learn_Master():
         # penloss = self.penalties(avgloss, kweight, out_dims)
         penloss = avgloss
 
-        return penloss, all_models, all_tuners
+
+        self.kt_fits[str(obj)] = penloss
+        self.trained_tuners[str(obj)] = all_tuners
+        # return penloss, all_models, all_tuners
+        return penloss, all_tuners
 
 
 
@@ -905,13 +929,13 @@ class Learn_Master():
 
 
         dimsout = self.output_dims[obj[0, 2]]
-        if num_nulls != 0 and self.nn_architectures[obj[0, 6]] == 'ff':
+        if num_nulls > 0 and self.nn_architectures[obj[0, 6]] == 'ff':
             null_labels = self.build_null_labels(self.test_labels,
                                              self.projections[obj[0, 2]],
                                              num_nulls
                                              )
             resnull = np.empty((dimsout, train_epochs, num_nulls))
-        elif num_nulls != 0 and self.nn_architectures[obj[0, 6]] == 'rnn':
+        elif num_nulls > 0 and self.nn_architectures[obj[0, 6]] == 'rnn':
             null_labels = self.build_null_labels(self.ordtest_labels,
                                              self.projections[obj[0, 2]],
                                              num_nulls
@@ -925,17 +949,18 @@ class Learn_Master():
         reste = np.empty((dimsout, train_epochs))
 
 
-        if saver_path != 'untitled':
-            if os.path.exists(saver_path):
-                with open(saver_path, 'rb') as f:
-                    saver = pickle.load(f)
 
-                restr = saver['restr']
-                reste = saver['reste']
-                resnull = saver['resnull']
+        if os.path.exists(saver_path):
+            with open(saver_path, 'rb') as f:
+                saver = pickle.load(f)
 
-            else:
-                saver = dict()
+            # restr = saver['restr']
+            # reste = saver['reste']
+            # resnull = saver['resnull']
+
+        else:
+            saver = dict()
+
 
         if self.nn_architectures[obj[0, 6]] == 'ff':
 
@@ -1009,7 +1034,8 @@ class Learn_Master():
 
                 saver['restr'] = restr
                 saver['reste'] = reste
-                saver['resnull'] = resnull
+                if 'resnull' in locals():
+                    saver['resnull'] = resnull
 
                 with open(saver_path, 'wb') as f:
                     pickle.dump(saver, f)
@@ -1085,7 +1111,8 @@ class Learn_Master():
                     keras.backend.clear_session()
                 saver['restr'] = restr
                 saver['reste'] = reste
-                saver['resnull'] = resnull
+                if 'resnull' in locals():
+                    saver['resnull'] = resnull
 
                 with open(saver_path, 'wb') as f:
                     pickle.dump(saver, f)
@@ -1211,7 +1238,11 @@ class Learn_Master():
             m = min(randfits)
 
             idx = np.where(fit==m)
-            parents[ii, :] = obj[idx[0], :]
+            bo = np.issubdtype(type(idx), np.integer)
+            while not bo:
+                idx = idx[0]
+                bo = np.issubdtype(type(idx), np.integer)
+            parents[ii, :] = obj[idx, :]
 
         return parents
 
@@ -1232,8 +1263,8 @@ class Learn_Master():
                 rmut = np.random.rand()
                 if rmut < mutation_rate:
                     children[ii, jj] = np.random.randint(self.lb[jj], self.ub[jj])
-            children[ii+1, :crosspoint] = shuffled[ii, :crosspoint]
-            children[ii+1, crosspoint:] = shuffled[ii+1, crosspoint:]
+            children[ii+1, :crosspoint] = shuffled[ii+1, :crosspoint]
+            children[ii+1, crosspoint:] = shuffled[ii, crosspoint:]
             for jj in range(children.shape[1]):
                 # mutation
                 rmut = np.random.rand()
@@ -1243,6 +1274,14 @@ class Learn_Master():
         return children
 
 
+    def reload_kt_checkpoints(self):
+        for filename in os.listdir(self.kt_master_dir):
+            name, file_extension = os.path.splitext(filename)
+            if '.pkl' not in file_extension:
+                start = name.find('[')
+                end = name.find(']')
+                key = name[start:end+2]
+                self.kt_dir[key] = name
 
     def genetic_alg(self, numparents, npop, gasaver, save_every, mutation=0.2, stagnate=False, trainfor=0, n_nulls=0):
         self.npop = npop
@@ -1254,6 +1293,9 @@ class Learn_Master():
             fit = saver['fit']
             iter = saver['iter']
             lowestfit = saver['lowestfit']
+            # if os.path.exists(self.kt_master_dir):
+            #     self.reload_kt_checkpoints()
+
 
         else:
             saver = dict()
@@ -1278,20 +1320,32 @@ class Learn_Master():
                 mutation_rate = mutation * (self.maxiter - iter)/self.maxiter
             else:
                 mutation_rate = mutation
-            iter += 1
+
             poptuners = []
+            obj = self.enforce_bounds(obj)
+            obj = self.intcons(obj)
             for jj in range(self.npop):
-                obj[jj, :] = self.enforce_bounds(obj[jj, :])
-                obj[jj, :] = self.build_objdataset(obj[jj, :])
-                fit[jj], _, tuners = self.ff_fitness(
+                obj2d = obj[jj, :]
+                obj2d = np.reshape(obj2d, (1, obj2d.shape[0]))
+                obj2d = self.enforce_bounds(obj2d)
+                obj2d = self.intcons(obj2d)
+                obj2d= self.build_objdataset(obj2d)
+                fit[jj], tuners = self.ff_fitness(
                     self.input_dims[obj[jj, 1]],
                     self.output_dims[obj[jj, 2]],
                     self.keyword_weigth_factor[obj[jj, 3]],
+                    obj2d,
                     optimizer=self.optimizers[obj[jj, 5]],
                     nn_architecture=self.nn_architectures[obj[jj, 6]],
                     hyperoptimizer=self.hyperoptimizers[obj[jj, 7]]
                 )
                 poptuners.append(tuners)
+            with open(self.kt_master_dir + '/fits.pkl', 'wb') as f:
+                pickle.dump(self.kt_fits, f)
+
+            with open(self.kt_master_dir + '/tuners.pkl', 'wb') as f:
+                pickle.dump(self.trained_tuners, f)
+
 
             minfit = min(fit)
             if minfit < lowestfit:
@@ -1300,10 +1354,13 @@ class Learn_Master():
                 midx = m[0]
                 minidx = midx[0]
                 minobj = obj[minidx, :]
+                minobj = np.reshape(minobj, (1, minobj.shape[0]))
+                minobj = self.intcons(minobj)
                 mintuners = poptuners[minidx]
 
                 if trainfor > 0:
-                    results = self.train_best_hps(mintuners, minobj, trainfor, n_nulls)
+                    results = self.train_best_hps(mintuners, minobj, trainfor, n_nulls,
+                                                  saver_path=os.path.join(up_dir,'Learn_Master/GA_files/train_saver.pkl'))
                     allresults = saver['results']
                     allresults.append(results)
                     saver['lfits'].append(lowestfit)
@@ -1321,6 +1378,7 @@ class Learn_Master():
                     pickle.dump(saver, f)
 
 
+            iter += 1
             parents = self.parent_select(obj, fit, numparents, Y=2)
             children = self.crossover(parents, mutation_rate)
 
@@ -1389,8 +1447,8 @@ if __name__ == '__main__':
         fib.remove(1) # removes first 1
         return fib
 
-    # weighting_factor = fibonacci(10)
-    weighting_factor = [1]
+    weighting_factor = fibonacci(10)
+    # weighting_factor = [1]
     optimizers = ['sgd', 'adam', 'adagrad', 'rmsprop', 'adadelta', 'adamax']
 
     label_paths = [
@@ -1432,14 +1490,14 @@ if __name__ == '__main__':
 
 
     we_model_paths = [
-        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_2dims'),
-        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_3dims'),
-        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_5dims'),
-        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_10dims'),
-        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_20dims'),
-        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_30dims'),
-        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_40dims'),
-        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_50dims'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_2dims_v02'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_3dims_v02'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_5dims_v02'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_10dims_v02'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_20dims_v02'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_30dims_v02'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_40dims_v02'),
+        os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_50dims_v02'),
         os.path.join(up_dir,'Word_Embeddings/Scientific_Articles/sciart_model')
     ]
 
@@ -1448,8 +1506,8 @@ if __name__ == '__main__':
 
 
 
-    atom_embed_method = ['sum_atoms', 'avg_atoms', 'ndelta', 'pvdm']
-
+    # atom_embed_method = ['sum_atoms', 'avg_atoms', 'ndelta', 'pvdm']
+    atom_embed_method = ['sum_atoms', 'avg_atoms', 'ndelta']
     # atom_embed_method = ['sum_atoms']
     # for output in output_dims:
     #     for curdim in range(output):
@@ -1465,8 +1523,13 @@ if __name__ == '__main__':
     # nn_arch = ['ff']
     curdim = 0
 
-    run_name = 'ga_s25ep_all_00'
+    run_name = 'ga_tu25_pop20_tr25_stag_03'
+    # run_name = 'test'
     saverpath = '{}.pkl'.format(run_name)
+
+    # kt_master_dir = '//ocean/projects/mss140007p/danewebb/kt_checkpoints'
+    kt_master_dir = os.path.join(up_dir, 'Learn_Master/kt_checkpoints')
+    # kt_master_dir = r'D:\kt_checkpoints'
 
     fit_savepath = os.path.join(up_dir, 'Learn_Master/checkpoints/fitness_{run_name}.pkl'.format(run_name=run_name))
     # run_name = 'test'
@@ -1488,14 +1551,15 @@ if __name__ == '__main__':
         ints,
         projections,
         # curout_dim=curdim,
-        epochs = 25,
+        epochs = 100,
+        fitness_epochs= 100,
         mu0=3,
         alpha=1,
         delta=1,
-        maxiter=30,
+        maxiter=50,
         savepath_model=model_paths,
         rnn_steps=3,
-        kt_directory='test1',
+        kt_master_dir=kt_master_dir,
         checkpoint_filepath=checkpoint_filepath,
         raw_paras=paras,
         fitness_savepath=fit_savepath,
@@ -1503,20 +1567,15 @@ if __name__ == '__main__':
 
 
 ### GA script
-#     numparents = 10
-#     npop = 20
-#     mutate_rate = 0.3
-#     ga_run_name = 'ga_tu25_pop20_tr25_stag'
-#     # try:
-#     #     with open(os.path.join(up_dir,'Learn_Master/optimized_models/ga_results_{run_name}.pkl'.format(run_name=run_name)), 'rb') as f:
-#     #         optimization_results = pickle.load(f)
-#     # except:
-#     #     optimization_results = dict()
-#     # results = dict()
-#
-#     gasaver = os.path.join(up_dir,'Learn_Master/GA_files/{}.pkl'.format(ga_run_name))
-#
-#     LM.genetic_alg(numparents, npop, gasaver, 1, mutation=mutate_rate, stagnate=True, trainfor=25, n_nulls=0)
+    numparents = 10
+    npop = 20
+    mutate_rate = 0.3
+    ga_run_name = 'ga_tu25_pop20_tr25_stag_03'
+
+
+    gasaver = os.path.join(up_dir,'Learn_Master/GA_files/{}.pkl'.format(ga_run_name))
+
+    LM.genetic_alg(numparents, npop, gasaver, 1, mutation=mutate_rate, stagnate=True, trainfor=25, n_nulls=0)
 
     # with open(os.path.join(up_dir,'Learn_Master/optimized_models/ga_results_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
     #     pickle.dump(optimization_results, f)
@@ -1576,6 +1635,50 @@ if __name__ == '__main__':
     #
     # with open(os.path.join(up_dir,'Learn_Master/predictions/results_{}'.format(pred_name)), 'wb') as f:
     #     pickle.dump(train_res, f)
+    #
+
+
+### GA Train and Predict kt_checkpoints
+
+    # with open(os.path.join(up_dir, 'fits.pkl'), 'rb') as f:
+    #     fits =  pickle.load(f)
+    #
+    # with open(os.path.join(up_dir, 'tuners.pkl'), 'rb') as f:
+    #     tuners =  pickle.load(f)
+    #
+    # minfit = 1
+    # for key, val in fits.items():
+    #     if val < minfit:
+    #         minfit = val
+    #         keywant = key
+    #
+    # strobj = []
+    # for ele in keywant:
+    #     if ele == '[' or ele == ']':
+    #         pass
+    #     else:
+    #         strobj.append(ele)
+    #
+    # strobj = ''.join(strobj)
+    #
+    # obj = np.fromstring(strobj, dtype=int, sep=' ')
+    # obj = np.reshape(obj, (1, obj.shape[0]))
+    #
+    #
+    #
+    # pred, predlabels = LM.train_best_hps(tuners[keywant], obj, 500, num_nulls=0, predict=True)
+    # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\pred.pkl', 'wb') as f:
+    #     pickle.dump(pred, f)
+    #
+    # with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\predlabels.pkl', 'wb') as f:
+    #     pickle.dump(predlabels, f)
+
+        # def train_best_hps(self, tuners, objectives, train_epochs, num_nulls=50, predict=False, saver_path='untitled',
+        #                    curdim=0, import_model=None
+        #                    ):
+
+
+
 
 
 ### PS script
@@ -1653,19 +1756,21 @@ if __name__ == '__main__':
 
 
 ### GA prediction script
-    pred_name = 'ga_tu25_pop20_tr25_stag_pred'
+    # pred_name = 'ga_tu25_pop20_tr25_stag_pred'
+    #
+    # optimized_models = [os.path.join(up_dir,'Learn_Master/optimized_models/model_00'),
+    #                     os.path.join(up_dir,'Learn_Master/optimized_models/model_01')]
+    # obj = [1, 7, 2, 1, 3, 5, 0, 1]
+    # obj = np.asarray(obj)
+    # obj = np.reshape(obj, (1, obj.shape[0]))
+    #
+    # prediction, predlabels = LM.predict(obj, optimized_models)
+    #
+    #
+    # with open( os.path.join(up_dir, 'Learn_Master/predictions/pred_{}.pkl'.format(pred_name)), 'wb') as f:
+    #     pickle.dump(prediction, f)
+    #
+    # with open(os.path.join(up_dir, 'Learn_Master/predictions/predlabels_{}.pkl'.format(pred_name)), 'wb') as f:
+    #     pickle.dump(predlabels, f)
 
-    optimized_models = [os.path.join(up_dir,'Learn_Master/optimized_models/model_00'),
-                        os.path.join(up_dir,'Learn_Master/optimized_models/model_01')]
-    obj = [1, 7, 2, 1, 3, 5, 0, 1]
-    obj = np.asarray(obj)
-    obj = np.reshape(obj, (1, obj.shape[0]))
 
-    prediction, predlabels = LM.predict(obj, optimized_models)
-
-
-    with open( os.path.join(up_dir, 'Learn_Master/predictions/pred_{}.pkl'.format(pred_name)), 'wb') as f:
-        pickle.dump(prediction, f)
-
-    with open(os.path.join(up_dir, 'Learn_Master/predictions/predlabels_{}.pkl'.format(pred_name)), 'wb') as f:
-        pickle.dump(predlabels, f)

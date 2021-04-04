@@ -141,7 +141,7 @@ class Atom_Embedder:
     def pvdm_train(self, raw_paras):
         vec_size = self.weights.shape[1]
         _, corpus = list(self.__read_corpus(raw_paras, tag_bool=True))
-        self.pvdm_model = gensim.models.doc2vec.Doc2Vec(vector_size=vec_size, min_count=2, epochs=40, dm=1)
+        self.pvdm_model = gensim.models.doc2vec.Doc2Vec(vector_size=vec_size, min_count=2, epochs=1000, dm=1)
         self.pvdm_model.build_vocab(corpus)
 
         self.pvdm_model.train(corpus, total_examples=self.pvdm_model.corpus_count, epochs=self.pvdm_model.epochs)

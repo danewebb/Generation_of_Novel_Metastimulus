@@ -556,12 +556,11 @@ class Atom_FFNN:
     def random_search(self):
         tuner = RandomSearch(
             self.build_model,
-            'val_mean_squared_error',
+            'mean_squared_error',
             self.max_trials, # more than 2 and it crashes
             overwrite=True,
             # directory=self.kt_dir
             # executions_per_trial=self.max_executions_per,
-            # directory=dir,
             # project_name=name
             )
         # try:
@@ -606,7 +605,7 @@ class Atom_FFNN:
         tuner = Hyperband(
             self.build_model,
             objective='mean_squared_error',
-            max_epochs=self.hyper_maxepochs,
+            max_epochs=self.epochs,
             factor=self.hyper_factor,
             hyperband_iterations= self.hyper_iters, # The number of times to iterate over the full Hyperband algorithm. It is recommended to set this to as high a value as is within your resource budget.
             # directory=dir,

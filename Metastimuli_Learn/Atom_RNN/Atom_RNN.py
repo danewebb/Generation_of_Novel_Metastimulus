@@ -405,8 +405,9 @@ class Atom_RNN():
     def random_search(self):
         tuner = RandomSearch(
             self.build_model,
-            'val_mean_squared_error',
+            'mean_squared_error',
             self.max_trials,  # more than 2 and it crashes
+
             overwrite=True,
             # directory=self.kt_dir
             # executions_per_trial=self.max_executions_per,

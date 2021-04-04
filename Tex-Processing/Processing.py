@@ -140,9 +140,14 @@ class Tex_Processing():
                         if nostop == '':
                             atom.append(0)
                         else:
-                            atom.append(ranked_vocab.index(nostop))
+                            try:
+                                atom.append(ranked_vocab.index(nostop))
+                            except ValueError:
+                                atom.append(0)
             atoms.append(atom)
             atom = []
+
+        return atoms
 
     # def split_data(self):
     #     """
@@ -357,6 +362,12 @@ if __name__ == '__main__':
 
     vocab_dict = PCS.build_vocab()
     ranked_vocab = PCS.rank_vocab(vocab_dict, 2)
-    PCS.encode_paras(ranked_vocab)
+    enc_atoms = PCS.encode_paras(ranked_vocab)
+
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Tex-Processing\ranked_vocab_v02.pkl', 'wb') as f:
+        pickle.dump(ranked_vocab, f)
+
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Tex-Processing\rico_encodings_v02.pkl', 'wb') as f:
+        pickle.dump(enc_atoms, f)
 
     # PCS.main(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data_02.pkl')

@@ -191,12 +191,12 @@ class Weighting_Keyword:
         self.phrase['angular'] = ['velocity']
 
 
-        V['words'] = ['volt']; V['weight'] = self.w; V['first'] = []
+        V['words'] = ['volt', 'voltage']; V['weight'] = self.w; V['first'] = []
         v['words'] = ['velocity']; v['weight'] = self.w; v['first'] = []
-        OM['words'] = ['omega']; OM['weight'] = self.w; OM['first'] = []
+        OM['words'] = ['omega', 'rotational']; OM['weight'] = self.w; OM['first'] = []
         P['words'] = ['pressure']; P['weight'] = self.w; P['first'] = []
         TE['words'] = ['temperature']; TE['weight'] = self.w; TE['first'] = []
-        S['words'] = ['source']; S['weight'] = self.w; S['first'] = ['across']
+        S['words'] = ['source', 'across-variable', 'through-variable']; S['weight'] = self.w; S['first'] = ['across']
 
         f['words'] = ['force']; f['weight'] = self.w; f['first'] = []
         TO['words'] = ['torque']; TO['weight'] = self.w; TO['first'] = []
@@ -219,8 +219,8 @@ class Weighting_Keyword:
         D['words'] = ['d-type']; D['weight'] = self.w; D['first'] = []
         B['words'] = ['damper']; B['weight'] = self.w; B['first'] = []
         R['words'] = ['resistor']; R['weight'] = self.w; R['first'] = []
-        FR['words'] = ['drag']; FR['weight'] = self.w; FR['first'] = ['fluid', 'fluids']
-        TR['words'] = []; TR['weight'] = self.w; TR['first'] = ['thermal', 'thermals']
+        FR['words'] = ['drag']; FR['weight'] = self.w; FR['first'] = ['fluid']
+        TR['words'] = []; TR['weight'] = self.w; TR['first'] = ['thermal']
 
 
 

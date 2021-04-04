@@ -205,14 +205,15 @@ def comparative_bar_plot(prediction, actual, nbars, y, title, dim=1, width=0.35,
     plt.grid()
     plt.autoscale(enable=True, axis='x', tight=True)
     plt.xticks([50], visible=True, rotation="horizontal")
-    savefig = 'D:/Documents/THESIS/Figures/HCI_2021/CBP_dim{}_00.pdf'.format(dim)
+    # savefig = 'D:/kt_checkpoints/CBP_dim{}_00.pdf'.format(dim)
+    savefig = 'D:/kt_checkpoints/CBP_avg_00.pdf'.format(dim)
     plt.savefig(savefig, bbox_inches='tight', format='pdf')
 
 
 
-def scatterplot3d(prediction, actual, type='', num_points=20, colors=[], styles=[], seed=24):
+def scatterplot3d(prediction, actual, type='', num_points=20, colors=[], styles=['-', 'dotted'], seed=24):
     # todone Rico save routine
-    random.seed(seed)
+    # random.seed(seed)
     idxs = random.sample(range(len(prediction)), num_points)
 
     if type == '':
@@ -254,9 +255,9 @@ def scatterplot3d(prediction, actual, type='', num_points=20, colors=[], styles=
         raise Exception('unknown argument for type')
 
     plt.autoscale(enable=True, axis='x', tight=True)
-    savefig = 'D:/Documents/THESIS/Figures/HCI_2021/vector.pdf'.format(dim)
+    savefig = 'D:/kt_checkpoints/connected.pdf'
     plt.savefig(savefig, bbox_inches='tight', format='pdf')
-
+    # plt.show()
 
 def multi_part(trloss, teloss, nuloss):
     tr = np.concatenate(trloss, axis=1)
@@ -312,7 +313,8 @@ def plot_metaloss(train, test, title, colors, x, y, null=None, linestyles = None
 
             plt.autoscale(enable=True, axis='x', tight=True)
 
-            savepath = 'D:/Documents/THESIS/Figures/HCI_2021/metaloss_dim{}.pdf'.format(dim)
+            # savepath = 'D:/Documents/THESIS/Figures/HCI_2021/metaloss_dim{}.pdf'.format(dim)
+            savepath = 'D:/kt_checkpoints/training.pdf'
             plt.savefig(savepath, bbox_inches='tight', format='pdf')
             return
     # except:

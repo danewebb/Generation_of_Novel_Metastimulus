@@ -159,23 +159,52 @@ if __name__ == '__main__':
     # with open(r'C:\Users\liqui\PycharmProjects\Word_Embeddings\Lib\ricocorpus_wordembedding\train_len.pkl', 'rb') as file1:
     #     train_lens = pickle.load(file1)
 
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\encoded_data_01.pkl', 'rb') as file:
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Tex-Processing\rico_encodings_v02.pkl', 'rb') as file:
         data = pickle.load(file)
 
 
     # vocab in order of most common -> least common
-    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ranked_vocab.pkl',
+    with open(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Tex-Processing\ranked_vocab_v02.pkl',
               'rb') as voc_file:
         vocab = pickle.load(voc_file)
 
 
 
 
-    wre = word_embedding_ricocorpus(data, vocab, 40, shuffling=True,
-                                    save_location=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_40dims',
+
+
+    wre = word_embedding_ricocorpus(data, vocab, 10, shuffling=True,
+                                    save_location=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word_Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_10dims_v02',
                                     set_epochs=10000
                                     )
+    wre.list_to_numpy()
+    wre.train_embedding()
 
+    wre = word_embedding_ricocorpus(data, vocab, 20, shuffling=True,
+                                    save_location=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word_Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_20dims_v02',
+                                    set_epochs=10000
+                                    )
+    wre.list_to_numpy()
+    wre.train_embedding()
+
+    wre = word_embedding_ricocorpus(data, vocab, 30, shuffling=True,
+                                    save_location=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word_Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_30dims_v02',
+                                    set_epochs=10000
+                                    )
+    wre.list_to_numpy()
+    wre.train_embedding()
+
+    wre = word_embedding_ricocorpus(data, vocab, 40, shuffling=True,
+                                    save_location=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word_Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_40dims_v02',
+                                    set_epochs=10000
+                                    )
+    wre.list_to_numpy()
+    wre.train_embedding()
+
+    wre = word_embedding_ricocorpus(data, vocab, 50, shuffling=True,
+                                    save_location=r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word_Embeddings\Rico-Corpus\models\ricocorpus_model10000ep_50dims_v02',
+                                    set_epochs=10000
+                                    )
     wre.list_to_numpy()
     wre.train_embedding()
     # wre.retrieve_we(r'C:\Users\liqui\PycharmProjects\Generation_of_Novel_Metastimulus\Lib\Word-Embeddings\Rico-Corpus\ricocorpus_1000ep_30dims\vecs.tsv',
