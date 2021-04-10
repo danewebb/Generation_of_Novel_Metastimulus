@@ -91,7 +91,7 @@ class Learn_Master():
 
 
         """
-        let us assume dataset is already created and encoded.
+        
 
         objectives = [_, input dims / model, output dims / labels,
               key weight, atom method, optimizer, NN arch, hyperoptimizers]
@@ -101,13 +101,13 @@ class Learn_Master():
         # [~, 20, 4, 1, ndelta, adam, ff, hyperband]
 
 
-        self.lb = [0, 0, 0, 0, 0, 0, 0, 0]
-        self.ub = [2, len(input_dims), len(output_dims), len(keyword_weight_factor),
-                   len(atom_methods), len(optimizers), len(nn_architectures), len(hyperoptimizers)]
+        self.lb = [0, 0, 0, 0, 0, 0, 0, 0] # lower bounds
+        self.ub = [1, len(input_dims), len(output_dims), len(keyword_weight_factor),
+                   len(atom_methods), len(optimizers), len(nn_architectures), len(hyperoptimizers)] # upper bounds
         if len(self.lb) != len(self.ub):
             raise ValueError('lb and ub must be the same lengths')
 
-        self.nvar = len(self.lb)
+        self.nvar = len(self.lb) # number of variables/genes
 
         self.checkpoint_filepath = checkpoint_filepath
         self.dataset_dict = dataset_dict
@@ -194,19 +194,28 @@ class Learn_Master():
 
     def build_objdataset(self, objectives):
         """
+        ####################################################################
+        This function must be rewritten for different problem set
+        ####################################################################
 
-        :param objectives:
-        :return:
+        Creates/collects the dataset for each set of objective variables. The datasets are created in the ``self''
+        variables. Uses Shuffler class from Randomizer.py and Atom_Embedder from atom_embedding.py
+
+        Unfortunately this function is hardcoded for my specific application.
+
+        :param objectives: expects a numpy array of dim 1 or 2. Values must be integers.
+        :return: objectives
         """
 
 
         if objectives.ndim == 1:
+            # convert dim 1 arrays to dim 2
             obj = objectives.astype(int)
             obj = np.reshape(obj, (1, len(obj)))
         else:
             obj = objectives
 
-        if obj[0, 1] == 8:
+        if obj[0, 1] == 8 or obj[0, 1] == 9:
             # sciart
             voc = self.vocab[1]
             enc = self.ordered_encdata[1]
@@ -217,20 +226,21 @@ class Learn_Master():
 
 
         input_dimension = self.input_dims[obj[0, 1]]
-        we_model = keras.models.load_model(self.we_models[obj[0, 1]])
+        we_model = keras.models.load_model(self.we_models[obj[0, 1]]) # word embeddings
 
         output_dimension = self.output_dims[obj[0, 2]]
         labels = self.ordered_labels[obj[0, 2]]
 
         # encoded, nlabels = self.eliminate_empties(enc, labels)
 
-        key_weight = self.keyword_weigth_factor[obj[0, 3]]
+        key_weight = self.keyword_weigth_factor[obj[0, 3]] # determine the weighting factor
 
         atom_method = self.atom_methods[obj[0, 4]]
         # atom_method = self.atom_methods[3]
 
-        atom_vecs = self.atom_embedding(atom_method, we_model, voc, key_weight, enc)
-        self.split_shuff(atom_vecs, labels, input_dimension)
+        atom_vecs = self.atom_embedding(atom_method, we_model, voc, key_weight, enc) # atom embeddings
+        self.split_shuff(atom_vecs, labels, input_dimension) # creates ordered and shuffled training sets and testing sets
+        # paired with their labels
 
         # self.kt_dir[str(obj)] = self.kt_master_dir + '/' + str(obj)
 
@@ -240,7 +250,14 @@ class Learn_Master():
 
 
     def eliminate_empties(self, enc, labs):
-        # just eliminates empty paragraphs and their labels
+        """
+        just eliminates empty paragraphs and their labels. At a previous iteration this was a minor problem but with
+        better word cleaning this is unnecessary.
+        :param enc: Encoded (ints) atoms in list
+        :param labs: Labels in list
+        :return: encoded atoms and labels with empties removed.
+        """
+        #
         atoms = []
         labels = []
         for para, lab in zip(enc, labs):
@@ -255,6 +272,22 @@ class Learn_Master():
 
 
     def atom_embedding(self, atom_embed_method, we_model, vocab, key_weight, ordered_encdata, ndel=8):
+        """
+        This function creates atom embeddings and applies weights according to word embeddings. Currently there are
+        four atom embedding functions. sum_atoms and avg_atoms are two bag of words techniques. The ndelta method takes
+        the sum of the difference of each word embedding for ndel number of times, (or until atom is left with one set of vectors).
+        The pvdm method or Paragraph Vector Distributed Memory
+
+        Atom_Embedder class from atom_embedding.py.
+        :param atom_embed_method:
+        :param we_model:
+        :param vocab:
+        :param key_weight:
+        :param ordered_encdata:
+        :param ndel:
+        :return:
+        """
+
         atom_vecs = []
 
         AE = Atom_Embedder(we_model.layers[0].get_weights()[0], vocab)
@@ -289,11 +322,13 @@ class Learn_Master():
                     atom_vecs.append(AE.sum_of_ndelta(p, ndel))
 
         elif atom_embed_method == 'pvdm':
+
             AE.pvdm_train(self.raw_paras)
+
             for para, rpara in zip(ordered_encdata, self.raw_paras):
                 if para:
-                    weights = WK.keyword_search(para)
-                    sweight = sum(weights)
+                    # weights = WK.keyword_search(para)
+                    sweight = 1
                     atom_vecs.append(AE.pvdm(rpara, sweight))
                 else:
                     # a= np.zeros((atom_vecs[-1].shape))
@@ -333,7 +368,7 @@ class Learn_Master():
         return penloss
 
 
-    def ff_fitness(self, input_dim, out_dims, kweight, obj, optimizer='sgd', nn_architecture='ff', hyperoptimizer='random'):
+    def ff_fitness(self, input_dim, out_dims, kweight, obj, optimizer='sgd', nn_architecture='ff', hyperoptimizer='random', kt_dir='untitled'):
         total_loss = []
         all_models = []
         all_tuners = []
@@ -361,7 +396,7 @@ class Learn_Master():
                     optimize=True,
                     seed=24,
                     optimizer=optimizer,
-                    # kt_directory=kt_dir,
+                    kt_directory=kt_dir,
                     epochs=self.fitness_epochs,
                     initial_points=3,
                     hyper_maxepochs=3,
@@ -404,7 +439,7 @@ class Learn_Master():
                     optimize=True,
                     seed=24,
                     optimizer=optimizer,
-                    # kt_directory=kt_dir,
+                    kt_directory=kt_dir,
                     steps=self.rnn_steps,
                     epochs=self.fitness_epochs,
                     initial_points=3,
@@ -1283,7 +1318,9 @@ class Learn_Master():
                 key = name[start:end+2]
                 self.kt_dir[key] = name
 
-    def genetic_alg(self, numparents, npop, gasaver, save_every, mutation=0.2, stagnate=False, trainfor=0, n_nulls=0):
+    def genetic_alg(self, numparents, npop, gasaver, save_every, mutation=0.2, stagnate=False,
+                    trainfor=0, n_nulls=0
+                    ):
         self.npop = npop
         if os.path.exists(gasaver):
             with open(gasaver, 'rb') as f:
@@ -1293,8 +1330,21 @@ class Learn_Master():
             fit = saver['fit']
             iter = saver['iter']
             lowestfit = saver['lowestfit']
+            # lowestfit = 1000
             # if os.path.exists(self.kt_master_dir):
             #     self.reload_kt_checkpoints()
+
+            gene = saver['gene']
+            poptuners = saver['poptuners']
+
+            # just once
+            # gene = 0
+            # poptuners = []
+            # saver['gene'] = gene
+            # saver['poptuners'] = poptuners
+            # saver['search_fits'] = []
+            # saver['search_objs'] = []
+            ###
 
 
         else:
@@ -1315,18 +1365,37 @@ class Learn_Master():
             saver['results'] = []
             saver['mintuners'] = []
 
+            saver['gene'] = 0
+            saver['poptuners'] = []
+
+            saver['search_fits'] = []
+            saver['search_objs'] = []
+
+            gene = 0
+            poptuners = []
+
+        # if os.path.exists(fitness_saver_path):
+        #     with open(fitness_saver_path, 'rb') as f:
+        #         fit_saver = pickle.load(f)
+        #
+        #     gene = fit_saver['gene']
+        #     poptuners = fit_saver['poptuners']
+
         while iter < self.maxiter:
             if stagnate: # reduce mutation rate over time?
                 mutation_rate = mutation * (self.maxiter - iter)/self.maxiter
             else:
                 mutation_rate = mutation
 
-            poptuners = []
+
             obj = self.enforce_bounds(obj)
             obj = self.intcons(obj)
-            for jj in range(self.npop):
+            for jj in range(gene, self.npop):
                 obj2d = obj[jj, :]
                 obj2d = np.reshape(obj2d, (1, obj2d.shape[0]))
+                if obj2d[0, 4] == 3:
+                    obj2d[0, 3] = 0
+
                 obj2d = self.enforce_bounds(obj2d)
                 obj2d = self.intcons(obj2d)
                 obj2d= self.build_objdataset(obj2d)
@@ -1337,9 +1406,26 @@ class Learn_Master():
                     obj2d,
                     optimizer=self.optimizers[obj[jj, 5]],
                     nn_architecture=self.nn_architectures[obj[jj, 6]],
-                    hyperoptimizer=self.hyperoptimizers[obj[jj, 7]]
+                    hyperoptimizer=self.hyperoptimizers[obj[jj, 7]],
+                    kt_dir=kt_master_dir,
                 )
                 poptuners.append(tuners)
+                gene += 1
+                saver['poptuners'] = poptuners
+                saver['gene'] = gene
+
+                saver['fit'] = fit
+                saver['obj'] = obj
+                saver['iter'] = iter
+                saver['tuners'] = poptuners
+                with open(gasaver, 'wb') as f:
+                    pickle.dump(saver, f)
+
+
+            saver['search_fits'].append(fit)
+            saver['search_objs'].append(obj)
+            gene = 0
+
             with open(self.kt_master_dir + '/fits.pkl', 'wb') as f:
                 pickle.dump(self.kt_fits, f)
 
@@ -1369,13 +1455,7 @@ class Learn_Master():
                     saver['lowestfit'] = lowestfit
                     saver['mintuners'].append(mintuners)
 
-            if iter % save_every == 0:
-                saver['fit'] = fit
-                saver['obj'] = obj
-                saver['iter'] = iter
-                saver['tuners'] = poptuners
-                with open(gasaver, 'wb') as f:
-                    pickle.dump(saver, f)
+
 
 
             iter += 1
@@ -1384,7 +1464,10 @@ class Learn_Master():
 
             obj = np.concatenate((parents, children), axis=0)
             np.random.shuffle(obj)
-
+            poptuners = []
+            saver['obj'] = obj
+            saver['gene'] = gene
+            saver['iter'] = iter
         with open(gasaver, 'wb') as f:
             pickle.dump(saver, f)
 
@@ -1428,7 +1511,7 @@ if __name__ == '__main__':
         with open(v, 'rb') as f:
             vocab.append(pickle.load(f))
 
-    input_dims = [2, 3, 5, 10, 20, 30, 40, 50, 2]
+    input_dims = [2, 3, 5, 10, 20, 30, 40, 50, 2, 3]
     # input_dims = [2]
     output_dims = [2, 3, 4] # greatly increases computation time
 
@@ -1498,16 +1581,16 @@ if __name__ == '__main__':
         os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_30dims_v02'),
         os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_40dims_v02'),
         os.path.join(up_dir,'Word_Embeddings/Rico-Corpus/models/ricocorpus_model10000ep_50dims_v02'),
-        os.path.join(up_dir,'Word_Embeddings/Scientific_Articles/sciart_model')
+        os.path.join(up_dir,'Word_Embeddings/Scientific_Articles/sciart_model'),
+        os.path.join(up_dir,'Word_Embeddings/Scientific_Articles/sciart_model_dim03')
     ]
 
 
 
 
 
-
-    # atom_embed_method = ['sum_atoms', 'avg_atoms', 'ndelta', 'pvdm']
-    atom_embed_method = ['sum_atoms', 'avg_atoms', 'ndelta']
+    atom_embed_method = ['sum_atoms', 'avg_atoms', 'ndelta', 'pvdm']
+    # atom_embed_method = ['sum_atoms', 'avg_atoms', 'ndelta']
     # atom_embed_method = ['sum_atoms']
     # for output in output_dims:
     #     for curdim in range(output):
@@ -1523,13 +1606,13 @@ if __name__ == '__main__':
     # nn_arch = ['ff']
     curdim = 0
 
-    run_name = 'ga_tu25_pop20_tr25_stag_03'
+    run_name = 'ga_tu25_pop20_tr25_stag_04'
     # run_name = 'test'
     saverpath = '{}.pkl'.format(run_name)
 
     # kt_master_dir = '//ocean/projects/mss140007p/danewebb/kt_checkpoints'
-    kt_master_dir = os.path.join(up_dir, 'Learn_Master/kt_checkpoints')
-    # kt_master_dir = r'D:\kt_checkpoints'
+    # kt_master_dir = os.path.join(up_dir, 'Learn_Master/kt_checkpoints')
+    kt_master_dir = r'D:\kt_checkpoints'
 
     fit_savepath = os.path.join(up_dir, 'Learn_Master/checkpoints/fitness_{run_name}.pkl'.format(run_name=run_name))
     # run_name = 'test'
@@ -1570,12 +1653,15 @@ if __name__ == '__main__':
     numparents = 10
     npop = 20
     mutate_rate = 0.3
-    ga_run_name = 'ga_tu25_pop20_tr25_stag_03'
+    ga_run_name = 'ga_tu25_pop20_tr25_stag_04'
 
+    fit_path = os.path.join(up_dir,'Learn_Master/GA_files/fitness_saver_path.pkl')
 
     gasaver = os.path.join(up_dir,'Learn_Master/GA_files/{}.pkl'.format(ga_run_name))
 
-    LM.genetic_alg(numparents, npop, gasaver, 1, mutation=mutate_rate, stagnate=True, trainfor=25, n_nulls=0)
+    LM.genetic_alg(numparents, npop, gasaver, 1, mutation=mutate_rate, stagnate=True,
+                   trainfor=25, n_nulls=10
+                   )
 
     # with open(os.path.join(up_dir,'Learn_Master/optimized_models/ga_results_{run_name}.pkl'.format(run_name=run_name)), 'wb') as f:
     #     pickle.dump(optimization_results, f)
@@ -1660,7 +1746,7 @@ if __name__ == '__main__':
     #         strobj.append(ele)
     #
     # strobj = ''.join(strobj)
-    #
+
     # obj = np.fromstring(strobj, dtype=int, sep=' ')
     # obj = np.reshape(obj, (1, obj.shape[0]))
     #

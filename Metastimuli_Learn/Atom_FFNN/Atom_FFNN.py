@@ -559,7 +559,7 @@ class Atom_FFNN:
             'mean_squared_error',
             self.max_trials, # more than 2 and it crashes
             overwrite=True,
-            # directory=self.kt_dir
+            directory=self.kt_dir
             # executions_per_trial=self.max_executions_per,
             # project_name=name
             )
@@ -585,7 +585,7 @@ class Atom_FFNN:
             num_initial_points=self.initial_points,
             seed=self.seed,
             overwrite=True,
-            # directory=self.kt_dir
+            directory=self.kt_dir
             )
 
         tuner.search(
@@ -611,7 +611,7 @@ class Atom_FFNN:
             # directory=dir,
             seed=self.seed,
             overwrite = True,
-            # directory=self.kt_dir
+            directory=self.kt_dir
             )
 
         tuner.search(
