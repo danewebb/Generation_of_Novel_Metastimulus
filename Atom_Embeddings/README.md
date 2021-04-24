@@ -1,4 +1,5 @@
-#Atom_Embeddings
+# Atom_Embeddings
+
 <!--- 
 Take out the PVDM scripts
 -->
@@ -36,7 +37,9 @@ for atom in encoded_data:
   embedded_atoms.append(AE.sum_atoms(atom))
 ```
 
-Currently, sum_atoms(), avg_atoms(), and nabla() methods allow for a keyword weighting. Keyword weighting is handled by the Weighting_Keyword class in [Word_Embeddings](https://github.com/dialectic/Metastimuli-Project/blob/master/Word_Embeddings/Weighting_Keywords.py).
+Currently, sum_atoms(), avg_atoms(), and nabla() methods allow for a keyword weighting. 
+Keyword weighting is handled by the Weighting_Keyword class in [Word_Embeddings](https://github.com/dialectic/Metastimuli-Project/blob/master/Word_Embeddings/Weighting_Keywords.py).
+Weighting keywords for PVDM embeddings may be in a future update.
 ```python
 from Weighting_Keywords import Weighting_Keyword
 
@@ -49,7 +52,8 @@ for atom in encoded_data:
   embedded_atoms.append(AE.sum_atoms(atom), weights=atom_weights)
 ```
 
-
+The nabla() method has an additional required argument *ndel*. 
+The ndel argument determines how many *differences* are taken for the sum of the difference.
 ```python
 # Nabla
 ### TODO change method name from sum_of_ndelta to nabla
@@ -58,6 +62,10 @@ for atom in encoded_data:
   embedded_atoms.append(AE.nabla(atom, ndel, weights=atom_weights))
 ```
 
+The PVDM() method must be first trained using the cleaned but unencoded text. 
+The package Gensim handles the word embeddings and atom embeddings internally.
+The second argument is a holdover from a previous version and is deprecated. 
+For now, insert a *1*.
 ```ptyhon
 # PVDM
 raw_atoms = load('raw_atoms_path')
@@ -67,9 +75,17 @@ for ratom in raw_atoms:
 
 ```
 ## Atom_Tag_Pairing
+Atom_Tag_Pairing has numerous methods that deal with labels.
 
 ## Usage
 
+```python
+data_dict: Expects dictionary format like the dictionary returned from 
+<pre>
+<a href="https://github.com/dialectic/Metastimuli-Project/blob/master/Tex-Processing/Label_Text_Builder.py">Label_Text_Builder</a>
+</pre>
+
+```
 
 ## Contributing
 
