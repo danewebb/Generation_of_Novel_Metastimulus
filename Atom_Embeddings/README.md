@@ -36,7 +36,7 @@ for atom in encoded_data:
   embedded_atoms.append(AE.sum_atoms(atom))
 ```
 
-Currently, sum_atoms(), avg_atoms(), and nabla() methods allow for a keyword weighting. Keyword weighting is handled by the Weighting_Keyword class in [Word_Embeddings](Weighting_Keywords.py).
+Currently, sum_atoms(), avg_atoms(), and nabla() methods allow for a keyword weighting. Keyword weighting is handled by the Weighting_Keyword class in [Word_Embeddings](https://github.com/dialectic/Metastimuli-Project/blob/master/Word_Embeddings/Weighting_Keywords.py).
 ```python
 from Weighting_Keywords import Weighting_Keyword
 
