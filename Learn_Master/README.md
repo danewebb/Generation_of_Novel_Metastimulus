@@ -37,7 +37,9 @@ Finding an optimal hyper-parameters and meta-parameters begins with the gentic a
 * npop: Number of meta-parameter sets for each generation. Must be even.
 * numparents: Must be half of npop.
 * mutation_rate: Range <pre>[0, 1]<pre> determines gene mutation rate. Higher mutation rate -> random gene selection while lower mutation rate can lead to early optimum choice.
-* stagnate: Bool, if stagnate==True the mutation rate will decrease by [equation](<img src="http://www.sciweavers.org/tex2img.php?eq=M%20%3D%20M_%7B0%7D%20%28%20%5Cfrac%7BT%20-%20t%7D%7BT%7D%20%29&bc=White&fc=Black&im=jpg&fs=18&ff=arev&edit=0" align="center" border="0" alt="M = M_{0} ( \frac{T - t}{T} )" width="179" height="65" />)
+* stagnate: Bool, if stagnate==True the mutation rate will decrease by 
+
+
 ```python
 npop = 20
 numparents = npop/2
