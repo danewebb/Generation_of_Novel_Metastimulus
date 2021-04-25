@@ -36,7 +36,7 @@ dataset_dict, vocab, ordered_encdata, ordered_labels, input_dims, we_models, out
 Finding an optimal hyper-parameters and meta-parameters begins with the gentic algorithm in the genetic_alg() method.
 * npop: Number of meta-parameter sets for each generation. Must be even.
 * numparents: Must be half of npop.
-* mutation_rate: Range <pre>[0, 1]<pre> determines gene mutation rate. Higher mutation rate -> random gene selection while lower mutation rate can lead to early optimum choice.
+* mutation_rate: Range [0, 1] determines gene mutation rate. Higher mutation rate -> random gene selection while lower mutation rate can lead to early optimum choice.
 * stagnate: Bool, if stagnate==True the mutation rate will decrease by 
 
 
