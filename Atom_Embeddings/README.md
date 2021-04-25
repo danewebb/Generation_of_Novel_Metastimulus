@@ -79,12 +79,39 @@ Atom_Tag_Pairing has numerous methods that deal with labels.
 
 ## Usage
 
-```python
-data_dict: Expects dictionary format like the dictionary returned from 
-<pre>
-<a href="https://github.com/dialectic/Metastimuli-Project/blob/master/Tex-Processing/Label_Text_Builder.py">Label_Text_Builder</a>
-</pre>
 
+* data_dict: Expects dictionary format like the dictionary returned from [Label_Text_Builder](https://github.com/dialectic/Metastimuli-Project/blob/master/Tex-Processing/Label_Text_Builder.py)
+* adjacency: Default argument that expects an adjacency file created by the [pimsifier](https://github.com/dialectic/dialectica-pimsifier/blob/ba5f5d647ef870de8d5bc62da380891d1f958745/pimsifier.rb).
+* projection: Default argument that expects a projection file from [pims-filter](https://github.com/dialectic/pims-filter/blob/ceab98b384ff23d841e74bdef7bd6e9ee2813ed0/pims-filter.py).
+
+
+Instantiate the class.
+```python
+from atom_tag_pairing import Atom_Tag_Pairing
+
+adj = json.load(adjacency.json)
+proj = load(projection_path)
+pred = load(prediction_path)
+
+ATP = Atom_Tag_Pairing(data_dict, adjacency=adj, projection=projection, prediction=pred
+```
+
+Pairing the tag_pairing() and projection_vector methods create a label-set that lines up with the atoms in data_dict. These are the labels used for the **regression** orientation of the artificial neural networks.
+```python
+ATP.tag_pairing()
+labels = ATP.projection_vectors()
+```
+
+Similar to the call above but turns labels into one-hot vectors for **probabilistic** neural network orientation.
+```python
+ATP.tag_pairing()
+ATP.one_hotify()
+```
+
+Conducts a 1 nearest neighbor to translate predicted vectors to defined vectors. Then, the proj_to_nodes() method converts the defined vectors into the adjacency nodes.
+```python
+ATP.nearest_neighbor()
+ATP.proj_to_nodes()
 ```
 
 ## Contributing
