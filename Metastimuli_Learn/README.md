@@ -31,26 +31,93 @@ Currently all of the arguments are default but if without
 Keras Tuner variables
 ---
 Below are Keras Tuner variables. Either leave default values or learn more about them [here](https://keras-team.github.io/keras-tuner/)
- input_min, input_max, input_step, hid_min, hid_max, hid_step, min_hlayers, max_hlayers,
+
+input_min, input_max, input_step, hid_min, hid_max, hid_step, min_hlayers, max_hlayers,
 learn_rate_min, learn_rate_max, beta1_min, beta1_max, beta1_step, beta2_min, beta2_max, beta2_step, momentum_min, momentum_max, momentum_step, initial_acc_min, initial_acc_max, initial_acc_step, epsilon_min, epsilon_max, epsilon_step, rho_min, rho_max, rho_step, max_trials, max_executions_per, initial_points, hyper_maxepochs, hyper_factor, hyper_iters,
 optimizer, kt_directory
+
+
+While this is mentioned in the roadmap, the deperecated variables and methods need to be deleted or modified to be more useful for the current setup.
+The same goes for the Atom_RNN. 
+Also, not all of the arguments should be class variables.
+
+
+
+```python
+FFNN = Atom_FFNN()
+```
+```python
+rand_search_tuner = FFNN.random_search()
+bayes_tuner = FFNN.bayesian()
+hyperband_tuner = FFNN.hyperband
+```
+
+
+### Keras Tuner training
+
+Keras Tuner variables may be left as default values. The default values were used for the results in 
+
+```python
+for dim in range(output_dimensions):
+ FFNN = Atom_FFNN(
+  data = tr_data,
+  train_labels = tr_labels,
+  test_data = te_data,
+  test_labels = te_labels,
+  nullset = nu_labels,
+  current_dim = dim,
+  regression = True,
+  batch_size = 100,
+  )
+  
+  tuner_rand = FFNN.random_search()
+  best_model_rand = tuner_rand.get_best_models(num_models=1)[0]
+  
+ FFNN = Atom_FFNN(
+  data = tr_data,
+  train_labels = tr_labels,
+  test_data = te_data,
+  test_labels = te_labels,
+  nullset = nu_labels,
+  current_dim = dim,
+  regression = True,
+  batch_size = 100,
+  epochs = 500,
+  model = best_model_rand
+  )
+  
+  history = FFNN.train()
+  test_results = FFNN.test()
+  null_results = FFNN.test_nullset()
+  
+  prediction_results = FFNN.predict()
+  
+```
+
+
+
+## Atom_RNN
 
 Recurrent neural network specific arguments.
 ---
 steps: int Number of recursive steps.
 
 
-```python
-FFNN = Atom_FFNN()
+## Usage
+Names of arguments, methods, and functionality is the same as the Atom_FFNN.
 
+```python
 RNN = Atom_RNN()
 ```
 
+## Roadmap
+
+The next step for both the Atom_FFNN and the Atom_RNN is to clean up the deprecated methods and arguments. 
+
+Greater functionality needs to be built in.
+Build custom models from arguments.
 
 
+## Contributions
 
-
-
-## Atom_RNN
-
-## Usage
+## Licenses
