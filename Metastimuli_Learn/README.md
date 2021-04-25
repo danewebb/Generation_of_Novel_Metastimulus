@@ -55,7 +55,7 @@ hyperband_tuner = FFNN.hyperband
 
 ### Keras Tuner training
 
-Keras Tuner variables may be left as default values. The default values were used for the results in 
+Keras Tuner variables may be left as default values. The default values were used for the results in [Metastimuli for Human Learning via Machine Learning and Principle Component Analysis of Personal Information Graphs.]
 
 ```python
 for dim in range(output_dimensions):
