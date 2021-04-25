@@ -36,8 +36,11 @@ dataset_dict, vocab, ordered_encdata, ordered_labels, input_dims, we_models, out
 Finding an optimal hyper-parameters and meta-parameters begins with the gentic algorithm in the genetic_alg() method.
 * npop: Number of meta-parameter sets for each generation. Must be even.
 * numparents: Must be half of npop.
+* gasaver: dictionary path for storing checkpoint data and operational data.
 * mutation_rate: Range <pre>[0, 1]</pre> determines gene mutation rate. Higher mutation rate -> random gene selection while lower mutation rate can lead to early optimum choice.
-* stagnate: Bool, if stagnate==True the mutation rate will decrease by <img src="https://bit.ly/32MvCQE" align="center" border="0" alt="M = M_{0} ( \frac{T - t}{T} )" width="179" height="65" />
+* stagnate: Bool, if stagnate==True the mutation rate will decrease by <img src="https://bit.ly/32MvCQE" align="center" border="0" alt="M = M_{0} ( \frac{T - t}{T} )" width="119" height="43" />.
+* trainfor: Determines the number of epochs to train after each fitness evaluation to store in the results of the gasaver.
+* n_nulls: Number of nullset runs for each trainfor epoch. Data is stored in results in the gasaver.
 
 
 ```python
@@ -50,6 +53,23 @@ gasaver = 'gasaver.pkl'
 saver_every = 5
 LM.genetic_alg(numparents, npop, gasaver, save_every, mutation=mutation_rate, stagnate=True, trainfor=25, n_nulls=0)
 ```
+
+
+The train_best_hps() method trains the Keras Tuner tuner model with the best hyper-parameters for the meta-parameter set given.
+* tuners: List of Keras Tuners tuners. One tuner for each output dimension.
+* objectives: List of numerical objectives or meta-parameters.
+* trainfor: Number of epochs to train each tuner model for.
+* num_nulls: Number of nullsets to use after each training epoch.
+* 
+```python
+prediction, prediction_labels = LM.train_best_hps(tuners, objectives, trainfor, num_nulls, predict=True)
+```
+
+
+
+--------------------------------------------------------------------------------------------------------
+Other methods will be included in this README at a later date. Currently, the two above are the most important and others are either deprecated or their main use is internally.
+--------------------------------------------------------------------------------------------------------
 
 
 ## Contributions
