@@ -9,7 +9,7 @@ While there are many default arguments for the class, it is not necessary to def
 * vocab: List of word embedding vocab ordered by frequency.
 * ordered_encdata: List of data in the original order encoded with the indices of the vocab argument.
 * ordered_labels: Labels matched with the data from ordered_encdata. Made from [Atom_Tag_Pairing](https://github.com/dialectic/Metastimuli-Project/blob/master/Atom_Embeddings/atom_tag_pairing.py)
-* input_dims: List of input dimensions.
+* input_dims: List of input dimensions. Must line up with dimensions of the word embedding models of we_models.
 * we_models: Keras word embedding model paths.
 * output_dims: List of projection output dimensions. Lines up with labels.
 * keyword_weight_factor: Integer value that is used to weight keywords. A value of one results in no weighting applied.
@@ -21,13 +21,23 @@ While there are many default arguments for the class, it is not necessary to def
 
 ## Usage
 
+Instantiating the Learn_Master class includes a lot of arguments. 
+The objective variables include from the union of the input_dims and we_models to the hyperoptimizers arguments.
+All of the default argument have to do with the genetic algorithm, checkpoint saving, or recurrent neural network specific variables.
+
+For the default arguments, special attention should be paid to the fitness_epochs and maxiter arguments. 
+The fitness_epochs determines the length of time the Keras Tuner search algorithms spend searching 
 ```python
 LM = Learn_Master(
 dataset_dict, vocab, ordered_encdata, ordered_labels, input_dims, we_models, output_dims, keyword_weight_factor, optimizers, atom_methods, nn_architectures, hyperoptimizers, fitness_epochs=100, maxiter=100, savepath_model=model_paths, rnn_steps=3, kt_master_dir=kt_master_dir, checkpoint_filepath=checkpoint_filepath, raw_paras=raw_paras, fitness_savepath=fit_savepath
 )
 ```
 
-
+Finding an optimal hyper-parameters and meta-parameters begins with the gentic algorithm in the genetic_alg() method.
+* npop: Number of meta-parameter sets for each generation. Must be even.
+* numparents: Must be half of npop.
+* mutation_rate: Range <pre>[0, 1]<pre> determines gene mutation rate. Higher mutation rate -> random gene selection while lower mutation rate can lead to early optimum choice.
+* stagnate: Bool, if stagnate==True the mutation rate will decrease by ![equation](<img src="http://www.sciweavers.org/tex2img.php?eq=M%20%3D%20M_%7B0%7D%20%28%20%5Cfrac%7BT%20-%20t%7D%7BT%7D%20%29&bc=White&fc=Black&im=jpg&fs=18&ff=arev&edit=0" align="center" border="0" alt="M = M_{0} ( \frac{T - t}{T} )" width="179" height="65" />)
 ```python
 npop = 20
 numparents = npop/2
